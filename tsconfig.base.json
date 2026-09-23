@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "target": "ES2023", "module": "CommonJS", "moduleResolution": "Node",
+    "strict": true, "noUncheckedIndexedAccess": true, "exactOptionalPropertyTypes": true,
+    "esModuleInterop": true, "experimentalDecorators": true, "emitDecoratorMetadata": true,
+    "forceConsistentCasingInFileNames": true, "skipLibCheck": true,
+    "baseUrl": ".", "paths": { "@rifad/runtime-config": ["libs/shared/runtime-config/src/index.ts"] }
+  }
+}

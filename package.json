@@ -1,0 +1,42 @@
+{
+  "name": "rifad-workspace",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@11.19.0",
+  "engines": { "node": ">=24.21.0 <25", "pnpm": "11.19.0" },
+  "scripts": {
+    "prelint": "nx show projects",
+    "projects": "nx show projects",
+    "lint": "eslint . --max-warnings 0",
+    "typecheck": "tsc -p tsconfig.typecheck.json --noEmit",
+    "build": "tsc -b",
+    "test:unit": "tsx --test libs/shared/runtime-config/src/config.spec.ts",
+    "test:architecture": "node --test libs/shared/testing/architecture/boundaries.spec.mjs",
+    "test:governance": "node --test tools/governance/governance.spec.mjs",
+    "test:smoke": "node --test --test-concurrency=1 libs/shared/testing/smoke/processes.spec.mjs",
+    "check:env": "node tools/check-env.mjs",
+    "check:governance": "node tools/governance/check-governance.mjs",
+    "architecture:extract": "node tools/governance/extract-architecture.mjs",
+    "architecture:verify": "node tools/governance/extract-architecture.mjs --check",
+    "check:security": "secretlint --secretlintignore .secretlintignore \"**/*\" && pnpm audit --audit-level=moderate",
+    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm test:architecture && pnpm test:governance && pnpm check:env && pnpm check:governance && pnpm architecture:verify && pnpm test:smoke",
+    "dev:api": "tsx apps/api/src/main.ts",
+    "dev:worker": "tsx apps/worker/src/main.ts",
+    "dev:edge": "tsx apps/edge/src/main.ts"
+  },
+  "devDependencies": {
+    "@nx/devkit": "23.2.1",
+    "@nx/eslint-plugin": "23.2.1",
+    "@secretlint/secretlint-rule-preset-recommend": "13.0.5",
+    "@types/node": "24.13.6",
+    "eslint": "9.39.5",
+    "eslint-config-prettier": "10.1.8",
+    "fast-xml-parser": "5.11.1",
+    "fflate": "0.8.3",
+    "nx": "23.2.1",
+    "secretlint": "13.0.5",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.0"
+  }
+}

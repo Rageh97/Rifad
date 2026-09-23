@@ -1,0 +1,14 @@
+{
+  "name": "@rifad/edge",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/main.js",
+  "dependencies": {
+    "@nestjs/common": "11.2.5",
+    "@nestjs/core": "11.2.5",
+    "@nestjs/platform-fastify": "11.2.5",
+    "@rifad/runtime-config": "workspace:*",
+    "reflect-metadata": "0.2.2",
+    "rxjs": "7.8.2"
+  }
+}

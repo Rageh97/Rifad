@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "useDaemonProcess": false,
+  "defaultBase": "main",
+  "namedInputs": { "default": ["{projectRoot}/**/*", "!{projectRoot}/dist/**/*"] },
+  "targetDefaults": { "build": { "dependsOn": ["^build"], "cache": true, "inputs": ["default", "^default", "{workspaceRoot}/tsconfig.base.json", "{workspaceRoot}/pnpm-lock.yaml"] } }
+}

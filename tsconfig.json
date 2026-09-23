@@ -1,0 +1,4 @@
+{
+  "files": [],
+  "references": [{ "path": "libs/shared/runtime-config" }, { "path": "apps/api" }, { "path": "apps/worker" }, { "path": "apps/edge" }]
+}

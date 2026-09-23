@@ -1,0 +1,18 @@
+{
+  "name": "edge",
+  "sourceRoot": "apps/edge/src",
+  "projectType": "application",
+  "tags": [
+    "scope:edge",
+    "layer:composition",
+    "runtime:edge"
+  ],
+  "targets": {
+    "build": {
+      "command": "tsc -b apps/edge",
+      "outputs": [
+        "{projectRoot}/dist"
+      ]
+    }
+  }
+}

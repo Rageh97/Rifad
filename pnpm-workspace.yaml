@@ -1,0 +1,15 @@
+packages:
+  - apps/*
+  - libs/shared/runtime-config
+engineStrict: true
+saveExact: true
+strictPeerDependencies: true
+enableGlobalVirtualStore: false
+storeDir: .pnpm-store
+confirmModulesPurge: false
+overrides:
+  fastify: 5.12.1
+  smol-toml: 1.7.1
+allowBuilds:
+  nx: true
+  esbuild: true
