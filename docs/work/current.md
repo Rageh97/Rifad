@@ -6,4 +6,4 @@
 - Authorized engineering pipeline batch: [B002E](batches/B002E.md)
 - Unresolved decisions: [register](decisions.md)
 
-This index grants no authorization and duplicates no task status. B002E is the only active implementation batch. Do not start a Product Batch.
+This index grants no authorization and duplicates no task status. B002E is blocked by the Windows verifier isolation gate; do not start a Product Batch.
