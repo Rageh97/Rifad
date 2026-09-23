@@ -150,9 +150,19 @@ test('role environment drops unrelated secrets and selects pinned Node and pnpm'
   const pnpm = pnpmRunner(runtime, findExecutable('pnpm'));
   const version = await run(pnpm.executable, [...pnpm.prefix, '--version'], { cwd: root, env: process.env });
   assert.equal(version.stdout.trim(), '11.19.0');
-  const codex = nodeCliRunner(runtime, findExecutable('codex'), 'codex');
-  const codexVersion = await run(codex.executable, [...codex.prefix, '--version'], { cwd: root, env: process.env });
-  assert.equal(codexVersion.code, 0);
+  const launcher = fixture();
+  try {
+    if (process.platform === 'win32') {
+      const target = join(launcher.dir, 'node_modules', '@openai', 'codex', 'bin', 'codex.js');
+      mkdirSync(join(launcher.dir, 'node_modules', '@openai', 'codex', 'bin'), { recursive: true });
+      writeFileSync(target, '');
+      const command = join(launcher.dir, 'codex.cmd');
+      writeFileSync(command, '"%dp0%\\node_modules\\@openai\\codex\\bin\\codex.js" %*\n');
+      assert.deepEqual(nodeCliRunner(runtime, command, 'codex'), { executable: runtime.node, prefix: [target] });
+    } else {
+      assert.deepEqual(nodeCliRunner(runtime, runtime.node, 'codex'), { executable: runtime.node, prefix: [] });
+    }
+  } finally { launcher.close(); }
   const env = childEnvironment({ runtime, binaries: [findExecutable('git')], temporary: tmpdir(), role: 'verifier',
     source: { PATH: process.env.PATH, SystemRoot: process.env.SystemRoot, USERPROFILE: process.env.USERPROFILE,
       APPDATA: process.env.APPDATA, LOCALAPPDATA: process.env.LOCALAPPDATA,
