@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync, symlinkSync, readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { resolve, join, dirname, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -25,7 +25,8 @@ test('actual ESLint/Nx rejects intentionally violated architecture fixtures', {t
   assert.ok(directory.startsWith(resolve('.test-artifacts')+sep));
   const write=(file,content)=>{const path=join(directory,file);mkdirSync(dirname(path),{recursive:true});writeFileSync(path,typeof content==='string'?content:JSON.stringify(content));};
   try {
-    symlinkSync(resolve('node_modules'),join(directory,'node_modules'),process.platform==='win32'?'junction':'dir');
+    // The fixture is below the workspace root, so Node resolves the pinned tools
+    // from the parent node_modules without a Windows junction or special privilege.
     write('package.json',{name:'architecture-fixtures',private:true,devDependencies:{nx:'23.2.1','@nestjs/common':'11.2.5'}});
     write('nx.json',{useDaemonProcess:false});
     const projects=[
