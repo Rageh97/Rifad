@@ -3,7 +3,10 @@
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@11.19.0",
-  "engines": { "node": ">=24.21.0 <25", "pnpm": "11.19.0" },
+  "engines": {
+    "node": ">=24.21.0 <25",
+    "pnpm": "11.19.0"
+  },
   "scripts": {
     "prelint": "nx show projects",
     "projects": "nx show projects",
@@ -13,13 +16,16 @@
     "test:unit": "tsx --test libs/shared/runtime-config/src/config.spec.ts",
     "test:architecture": "node --test libs/shared/testing/architecture/boundaries.spec.mjs",
     "test:governance": "node --test tools/governance/governance.spec.mjs",
+    "test:agent-pipeline": "node --test tools/agent-pipeline/pipeline.spec.mjs",
     "test:smoke": "node --test --test-concurrency=1 libs/shared/testing/smoke/processes.spec.mjs",
     "check:env": "node tools/check-env.mjs",
     "check:governance": "node tools/governance/check-governance.mjs",
     "architecture:extract": "node tools/governance/extract-architecture.mjs",
     "architecture:verify": "node tools/governance/extract-architecture.mjs --check",
     "check:security": "secretlint --secretlintignore .secretlintignore \"**/*\" && pnpm audit --audit-level=moderate",
-    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm test:architecture && pnpm test:governance && pnpm check:env && pnpm check:governance && pnpm architecture:verify && pnpm test:smoke",
+    "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm test:architecture && pnpm test:governance && pnpm test:agent-pipeline && pnpm check:env && pnpm check:governance && pnpm architecture:verify && pnpm test:smoke",
+    "agent:preflight": "node tools/agent-pipeline/cli.mjs preflight",
+    "agent:run": "node tools/agent-pipeline/cli.mjs run",
     "dev:api": "tsx apps/api/src/main.ts",
     "dev:worker": "tsx apps/worker/src/main.ts",
     "dev:edge": "tsx apps/edge/src/main.ts"
@@ -29,6 +35,7 @@
     "@nx/eslint-plugin": "23.2.1",
     "@secretlint/secretlint-rule-preset-recommend": "13.0.5",
     "@types/node": "24.13.6",
+    "ajv": "8.18.0",
     "eslint": "9.39.5",
     "eslint-config-prettier": "10.1.8",
     "fast-xml-parser": "5.11.1",
