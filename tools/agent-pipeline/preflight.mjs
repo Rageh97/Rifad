@@ -57,7 +57,7 @@ export async function preflight(root, temporary, { liveProbe = true } = {}) {
     run(binaries.gh, ['api', '--help'], { cwd: root, env: process.env }),
   ]);
   for (const flag of ['--json', '--output-schema', '--output-last-message', '--sandbox', '--ignore-user-config']) if (!codexHelp.stdout.includes(flag)) throw new Error('BLOCKED: UNSUPPORTED_CLI_VERSION: codex ' + flag);
-  if (!codexGlobalHelp.stdout.includes('--ask-for-approval')) throw new Error('BLOCKED: UNSUPPORTED_CLI_VERSION: codex approval');
+  if (!codexGlobalHelp.stdout.includes('--approve-for-me')) throw new Error('BLOCKED: UNSUPPORTED_CLI_VERSION: codex approval');
   for (const flag of ['--print', '--output-format', '--json-schema', '--conversation', '--disable-slash-commands']) if (!(agyHelp.stdout + agyHelp.stderr).includes(flag)) throw new Error('BLOCKED: UNSUPPORTED_CLI_VERSION: agy ' + flag);
   if (!(worktreeHelp.stdout + worktreeHelp.stderr).includes('--detach')) throw new Error('BLOCKED: UNSUPPORTED_CLI_VERSION: git worktree');
   if (!ghPrHelp.stdout.includes('--body-file') || !ghPrHelp.stdout.includes('--head') || !ghApiHelp.stdout.includes('api')) throw new Error('BLOCKED: UNSUPPORTED_CLI_VERSION: gh');

@@ -31,7 +31,7 @@ async function repository() {
   await git(binary, f.dir, ['config', 'user.name', 'RIFAD Test']);
   await git(binary, f.dir, ['config', 'user.email', 'test@example.invalid']);
   writeFileSync(join(f.dir, 'file.txt'), 'baseline\n');
-  writeFileSync(join(f.dir, '.gitignore'), 'runs/\n');
+  writeFileSync(join(f.dir, '.gitignore'), 'runs/\nnode_modules/\n');
   await git(binary, f.dir, ['add', 'file.txt', '.gitignore']);
   await git(binary, f.dir, ['commit', '-qm', 'baseline']);
   const sha = (await git(binary, f.dir, ['rev-parse', 'HEAD'])).trim();
@@ -76,8 +76,16 @@ test('detached verifier worktree is exact SHA and tracks file and untracked muta
     writeFileSync(join(worktree, 'untracked.txt'), 'tampered\n');
     const untrackedMutation = await snapshot(f.binary, worktree);
     assert.throws(() => verifySnapshot(before, untrackedMutation, f.sha), /PROTOCOL_VIOLATION/);
+    mkdirSync(join(worktree, 'node_modules'));
+    writeFileSync(join(worktree, 'node_modules', 'ignored.txt'), 'disposable dependency\n');
+    if (process.platform === 'win32') {
+      const deep = join(worktree, 'node_modules', ...Array(9).fill('a-very-long-disposable-name'));
+      mkdirSync(deep, { recursive: true });
+      writeFileSync(join(deep, 'ignored.txt'), 'long-path dependency\n');
+    }
   } finally {
     await removeWorktree(f.binary, f.dir, f.runs, worktree);
+    assert.equal(existsSync(worktree), false);
     f.close();
   }
 });
@@ -160,7 +168,7 @@ test('Codex Builder command is noninteractive and contains no Git mutation capab
     const result = await runBuilder({
       binary: 'codex', worktree: f.dir, env: {}, runDir: f.dir, task: validSpec,
       invoke: async (_binary, args) => {
-        assert.deepEqual(args.slice(0, 3), ['--ask-for-approval', 'never', 'exec']);
+        assert.deepEqual(args.slice(0, 2), ['--approve-for-me', 'exec']);
         assert.ok(args.includes('workspace-write'));
         assert.ok(!args.includes('--dangerously-bypass-approvals-and-sandbox'));
         writeFileSync(join(f.dir, 'builder-0.json'), '{"summary":"Done"}');

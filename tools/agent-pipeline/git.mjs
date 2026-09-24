@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { existsSync, lstatSync, readFileSync, readlinkSync, realpathSync } from 'node:fs';
-import { resolve, relative, sep, join } from 'node:path';
+import { existsSync, lstatSync, readFileSync, readlinkSync, realpathSync, rmSync } from 'node:fs';
+import { resolve, relative, sep, join, toNamespacedPath } from 'node:path';
 import { checked } from './process.mjs';
 import { pathName, scopeResult } from './policy.mjs';
 
@@ -36,9 +36,19 @@ export async function createDetached(binary, repository, runRoot, target, sha) {
 }
 
 export async function removeWorktree(binary, repository, runRoot, target) {
-  assertRunPath(runRoot, target);
-  if (existsSync(target)) await git(binary, repository, ['worktree', 'remove', '--force', target]);
-  if (existsSync(target)) throw new Error('PROTOCOL_VIOLATION: WORKTREE_CLEANUP_FAILED');
+  const safeTarget = assertRunPath(runRoot, target);
+  if (existsSync(safeTarget)) {
+    try { await git(binary, repository, ['worktree', 'remove', '--force', safeTarget]); }
+    catch { /* Git on Windows can leave ignored long-path dependencies after unregistering. */ }
+  }
+  const registered = await git(binary, repository, ['worktree', 'list', '--porcelain']);
+  const samePath = value => process.platform === 'win32'
+    ? resolve(value).toLowerCase() === safeTarget.toLowerCase()
+    : resolve(value) === safeTarget;
+  if (registered.split(/\r?\n/).some(line => line.startsWith('worktree ') && samePath(line.slice(9))) ||
+      existsSync(join(safeTarget, '.git'))) throw new Error('PROTOCOL_VIOLATION: WORKTREE_CLEANUP_FAILED');
+  if (existsSync(safeTarget)) rmSync(toNamespacedPath(safeTarget), { recursive: true, force: true, maxRetries: 3, retryDelay: 500 });
+  if (existsSync(safeTarget)) throw new Error('PROTOCOL_VIOLATION: WORKTREE_CLEANUP_FAILED');
 }
 
 export async function changedPaths(binary, worktree) {

@@ -41,6 +41,7 @@ export async function runBuilder({ binary, prefix = [], worktree, env, runDir, t
     'You are the Codex Builder for this approved RIFAD engineering task.',
     'Edit only the allowed paths. Do not create commits, branches, tags, pushes, pull requests, or GitHub actions. The orchestrator owns all Git/GitHub mutations.',
     'Do not run git add, git commit, git push, gh, or use real credentials/customer data.',
+    'Do not install dependencies or run tests, builds, linters, or other quality gates; the orchestrator runs all required gates.',
     `Task: ${task.taskId}. Risk: ${task.risk}. Base SHA: ${task.baseSha}.`,
     `Objective: ${task.objective}`,
     `Acceptance: ${JSON.stringify(task.acceptance)}`,
@@ -48,7 +49,7 @@ export async function runBuilder({ binary, prefix = [], worktree, env, runDir, t
     feedback ? `Address these independent findings or CI failures: ${feedback}` : '',
     'Return a short JSON summary. Leave all changes unstaged.',
   ].filter(Boolean).join('\n');
-  const args = ['--ask-for-approval', 'never', 'exec', '--json', '--output-schema', schemaPath, '--output-last-message', resultPath,
+  const args = ['--approve-for-me', 'exec', '--json', '--output-schema', schemaPath, '--output-last-message', resultPath,
     '--sandbox', 'workspace-write', '--ignore-user-config', '-C', worktree, prompt];
   const result = await invoke(binary, [...prefix, ...args], { cwd: worktree, env, timeoutMs: 20 * 60_000 });
   if (result.code !== 0 || result.timedOut || result.overflow) throw new Error('BLOCKED: BUILDER_FAILED');

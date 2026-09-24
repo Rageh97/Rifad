@@ -112,10 +112,7 @@ export async function execute(root, taskInput, hooks = {}) {
     state.to(terminalCode(error), { reason: String(error?.message ?? error).slice(0, 500) });
     return { ...record(), reason: String(error?.message ?? error), unauthorized: error?.unauthorized ?? null };
   } finally {
-    if (builderCreated) {
-      try { await removeWorktree(tools.binaries.git, root, runDir, builderWorktree); }
-      catch { /* Evidence remains for explicit cleanup if Git removal fails. */ }
-    }
+    if (builderCreated) await removeWorktree(tools.binaries.git, root, runDir, builderWorktree);
   }
 }
 
