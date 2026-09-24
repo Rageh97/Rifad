@@ -58,8 +58,9 @@ export async function runBuilder({ binary, prefix = [], worktree, env, runDir, t
   return { output, tokens: codexTokens(result.stdout) };
 }
 
-export async function runVerifier({ binary, gitBinary, worktree, env, runDir, task, candidateSha, conversationId, number, invoke = run }) {
+export async function runVerifier({ binary, gitBinary, repository, worktree, env, runDir, task, candidateSha, conversationId, number, invoke = run }) {
   const before = await snapshot(gitBinary, worktree);
+  const repositoryBefore = await snapshot(gitBinary, repository);
   let result, parsed, thrown;
   try {
     const diff = await git(gitBinary, worktree, ['diff', '--binary', `${task.baseSha}..${candidateSha}`]);
@@ -74,18 +75,21 @@ export async function runVerifier({ binary, gitBinary, worktree, env, runDir, ta
       `Allowed paths: ${JSON.stringify(task.allowedPaths)}`,
       'Candidate diff follows:', diff,
     ].join('\n');
-    const args = ['--sandbox', '--disable-slash-commands', '--print', prompt, '--output-format', 'json', '--json-schema', JSON.stringify(verifierSchema), '--print-timeout', '10m'];
+    const args = ['--disable-slash-commands', '--print', prompt, '--output-format', 'json', '--json-schema', JSON.stringify(verifierSchema), '--print-timeout', '10m'];
     if (conversationId) args.push('--conversation', conversationId);
     result = await invoke(binary, args, { cwd: worktree, env, timeoutMs: 11 * 60_000 });
-    if (result.code !== 0 || result.timedOut || result.overflow) throw new Error('BLOCKED: UNSAFE_WINDOWS_ISOLATION');
+    if (result.code !== 0 || result.timedOut || result.overflow) throw new Error('BLOCKED: VERIFIER_PROCESS_FAILED');
     try { parsed = JSON.parse(result.stdout); } catch { throw new Error('BLOCKED: VERIFIER_OUTPUT_INVALID'); }
     if (parsed.status !== 'SUCCESS' || !validateVerifier(parsed.structured_output) || parsed.structured_output.candidateSha !== candidateSha) throw new Error('BLOCKED: VERIFIER_OUTPUT_INVALID');
     if (!Number.isSafeInteger(parsed.usage?.total_tokens)) throw new Error('MISSING_USAGE');
   } catch (error) { thrown = error; }
   const after = await snapshot(gitBinary, worktree);
-  const evidence = { candidateSha, before, after, result: parsed?.structured_output ?? null, status: parsed?.status ?? null, error: thrown?.message ?? null };
+  const repositoryAfter = await snapshot(gitBinary, repository);
+  const evidence = { candidateSha, before, after, repositoryBefore, repositoryAfter,
+    result: parsed?.structured_output ?? null, status: parsed?.status ?? null, error: thrown?.message ?? null };
   writeFileSync(join(runDir, `verifier-${number}.json`), JSON.stringify(evidence, null, 2) + '\n');
   verifySnapshot(before, after, candidateSha);
+  verifySnapshot(repositoryBefore, repositoryAfter, repositoryBefore.head);
   if (thrown) throw thrown;
   return { ...parsed.structured_output, conversationId: parsed.conversation_id, tokens: parsed.usage.total_tokens };
 }

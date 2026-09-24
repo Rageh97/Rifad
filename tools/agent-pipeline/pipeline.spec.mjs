@@ -1,13 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathName, loadTaskSpec, scopeResult, UsageLedger } from './policy.mjs';
 import { childEnvironment, selectPinnedRuntime, findExecutable, nodeCliRunner, pnpmRunner, run } from './process.mjs';
 import { createDetached, enforceScope, git, removeWorktree, snapshot, verifySnapshot } from './git.mjs';
 import { runVerifier, runBuilder } from './agents.mjs';
-import { validateDependencyRecords, validateProtection, validateIsolationResult } from './preflight.mjs';
+import { validateDependencyRecords, validateProtection, validateVerifierProbe } from './preflight.mjs';
 import { RunState } from './state.mjs';
 import { execute } from './pipeline.mjs';
 
@@ -31,7 +31,8 @@ async function repository() {
   await git(binary, f.dir, ['config', 'user.name', 'RIFAD Test']);
   await git(binary, f.dir, ['config', 'user.email', 'test@example.invalid']);
   writeFileSync(join(f.dir, 'file.txt'), 'baseline\n');
-  await git(binary, f.dir, ['add', 'file.txt']);
+  writeFileSync(join(f.dir, '.gitignore'), 'runs/\n');
+  await git(binary, f.dir, ['add', 'file.txt', '.gitignore']);
   await git(binary, f.dir, ['commit', '-qm', 'baseline']);
   const sha = (await git(binary, f.dir, ['rev-parse', 'HEAD'])).trim();
   const runs = join(f.dir, 'runs');
@@ -88,7 +89,7 @@ test('verifier mutation is a protocol violation even with a PASS response', asyn
     await createDetached(f.binary, f.dir, f.runs, worktree, f.sha);
     const spec = { ...validSpec, baseSha: f.sha };
     await assert.rejects(runVerifier({
-      binary: 'agy', gitBinary: f.binary, worktree, env: {}, runDir: f.runs,
+      binary: 'agy', gitBinary: f.binary, repository: f.dir, worktree, env: {}, runDir: f.runs,
       task: spec, candidateSha: f.sha, number: 1,
       invoke: async () => {
         writeFileSync(join(worktree, 'file.txt'), 'verifier mutation\n');
@@ -103,6 +104,7 @@ test('verifier mutation is a protocol violation even with a PASS response', asyn
     assert.notEqual(evidence.before.trackedHash, evidence.after.trackedHash);
   } finally {
     await removeWorktree(f.binary, f.dir, f.runs, worktree);
+    assert.equal(existsSync(worktree), false);
     f.close();
   }
 });
@@ -113,7 +115,7 @@ test('verifier rejects a response for a different candidate SHA', async () => {
   try {
     await createDetached(f.binary, f.dir, f.runs, worktree, f.sha);
     await assert.rejects(runVerifier({
-      binary: 'agy', gitBinary: f.binary, worktree, env: {}, runDir: f.runs,
+      binary: 'agy', gitBinary: f.binary, repository: f.dir, worktree, env: {}, runDir: f.runs,
       task: { ...validSpec, baseSha: f.sha }, candidateSha: f.sha, number: 2,
       invoke: async () => ({ code: 0, stdout: JSON.stringify({
         status: 'SUCCESS', structured_output: {
@@ -121,6 +123,31 @@ test('verifier rejects a response for a different candidate SHA', async () => {
         }, usage: { total_tokens: 10 },
       }) }),
     }), /VERIFIER_OUTPUT_INVALID/);
+  } finally {
+    await removeWorktree(f.binary, f.dir, f.runs, worktree);
+    f.close();
+  }
+});
+
+test('verifier mutation of the original repository is a protocol violation', async () => {
+  const f = await repository();
+  const worktree = join(f.runs, 'verifier');
+  try {
+    await createDetached(f.binary, f.dir, f.runs, worktree, f.sha);
+    await assert.rejects(runVerifier({
+      binary: 'agy', gitBinary: f.binary, repository: f.dir, worktree, env: {}, runDir: f.runs,
+      task: { ...validSpec, baseSha: f.sha }, candidateSha: f.sha, number: 3,
+      invoke: async () => {
+        writeFileSync(join(f.dir, 'file.txt'), 'unauthorized original repository mutation\n');
+        return { code: 0, stdout: JSON.stringify({
+          status: 'SUCCESS', structured_output: {
+            candidateSha: f.sha, verdict: 'PASS', rationale: 'False pass', findings: [],
+          }, usage: { total_tokens: 10 },
+        }) };
+      },
+    }), /PROTOCOL_VIOLATION/);
+    const evidence = JSON.parse(readFileSync(join(f.runs, 'verifier-3.json'), 'utf8'));
+    assert.notEqual(evidence.repositoryBefore.trackedHash, evidence.repositoryAfter.trackedHash);
   } finally {
     await removeWorktree(f.binary, f.dir, f.runs, worktree);
     f.close();
@@ -194,16 +221,15 @@ test('B001 closure and main protection are hard preflight gates', () => {
   assert.throws(() => validateProtection({ ...protection, required_status_checks: { strict: true, checks: [] } }), /REQUIRED_CHECK_MISSING/);
 });
 
-test('Windows isolation gate rejects partial output, missing attempt and successful outside write', () => {
+test('Windows verifier CLI probe rejects partial or unsuccessful structured output', () => {
   const result = { code: 0, timedOut: false, overflow: false };
-  const denied = { status: 'SUCCESS', structured_output: { attempted: true, outcome: 'DENIED' } };
-  validateIsolationResult(result, denied, false);
-  for (const [candidate, output, marker] of [
-    [result, undefined, false],
-    [result, { status: 'SUCCESS', structured_output: { attempted: false, outcome: 'NOT_ATTEMPTED' } }, false],
-    [result, { status: 'SUCCESS', structured_output: { attempted: true, outcome: 'SUCCEEDED' } }, true],
-    [{ ...result, timedOut: true }, denied, false],
-  ]) assert.throws(() => validateIsolationResult(candidate, output, marker), /UNSAFE_WINDOWS_ISOLATION/);
+  const valid = { status: 'SUCCESS', structured_output: { ok: true } };
+  validateVerifierProbe(result, valid);
+  for (const [candidate, output] of [
+    [result, undefined],
+    [result, { status: 'SUCCESS', structured_output: { ok: false } }],
+    [{ ...result, timedOut: true }, valid],
+  ]) assert.throws(() => validateVerifierProbe(candidate, output), /VERIFIER_PROBE_FAILED/);
 });
 
 test('state machine prevents skipping verification and terminal revival', () => {
@@ -214,6 +240,48 @@ test('state machine prevents skipping verification and terminal revival', () => 
     assert.throws(() => state.to('READY_FOR_APPROVAL'), /INVALID_TRANSITION/);
     state.to('BLOCKED');
     assert.throws(() => state.to('BUILDING'), /TERMINAL_STATE/);
+  } finally { f.close(); }
+});
+
+test('orchestrator fails a mutating verifier and removes its disposable worktree', async () => {
+  const f = await repository();
+  const remote = join(f.dir, 'remote.git');
+  try {
+    writeFileSync(join(f.dir, '.gitignore'), '.agent-runs/\nremote.git/\n');
+    await git(f.binary, f.dir, ['add', '.gitignore']);
+    await git(f.binary, f.dir, ['commit', '-qm', 'ignore run evidence']);
+    const baseSha = (await git(f.binary, f.dir, ['rev-parse', 'HEAD'])).trim();
+    await git(f.binary, f.dir, ['init', '--bare', '-q', remote]);
+    await git(f.binary, f.dir, ['remote', 'add', 'origin', remote]);
+    await git(f.binary, f.dir, ['push', '-q', 'origin', baseSha + ':refs/heads/main']);
+    const result = await execute(f.dir, { ...validSpec, baseSha, allowedPaths: ['canary.txt'] }, {
+      preflight: async () => ({
+        binaries: { git: f.binary, codex: 'codex', agy: 'agy', gh: 'gh' },
+        pnpm: { executable: 'pnpm', prefix: [] }, gateEnv: {}, builderEnv: {}, verifierEnv: {},
+        versions: { node: '24.21.0' }, repository: 'fixture/repo', origin: remote, windows: 'TESTED',
+      }),
+      gateInvoke: async () => ({ code: 0, stdout: '', stderr: '' }),
+      builderInvoke: async (_binary, args) => {
+        writeFileSync(join(args[args.indexOf('-C') + 1], 'canary.txt'), 'synthetic candidate\n');
+        writeFileSync(args[args.indexOf('--output-last-message') + 1], '{"summary":"Synthetic canary"}');
+        return { code: 0, stdout: '{"type":"turn.completed","usage":{"total_tokens":100}}\n' };
+      },
+      verifierInvoke: async (_binary, _args, options) => {
+        writeFileSync(join(options.cwd, 'canary.txt'), 'unauthorized verifier mutation\n');
+        return { code: 0, stdout: JSON.stringify({
+          status: 'SUCCESS', structured_output: {
+            candidateSha: (await git(f.binary, options.cwd, ['rev-parse', 'HEAD'])).trim(),
+            verdict: 'PASS', rationale: 'False pass', findings: [],
+          }, usage: { total_tokens: 100 },
+        }) };
+      },
+      publishCandidate: async () => { throw new Error('mutated candidate must not publish'); },
+    });
+    assert.equal(result.status, 'PROTOCOL_VIOLATION');
+    assert.match(result.reason, /PROTOCOL_VIOLATION/);
+    assert.equal(existsSync(join(result.runDir, 'verifier-1')), false);
+    assert.equal(existsSync(join(result.runDir, 'builder')), false);
+    assert.equal((await git(f.binary, f.dir, ['status', '--porcelain'])).trim(), '');
   } finally { f.close(); }
 });
 

@@ -70,7 +70,7 @@ export async function execute(root, taskInput, hooks = {}) {
           await createDetached(tools.binaries.git, root, runDir, target, candidateSha);
           try {
             ledger.beforeNext('verifier', 8_000, progress);
-            const output = await runVerifier({ binary: tools.binaries.agy, gitBinary: tools.binaries.git, worktree: target,
+            const output = await runVerifier({ binary: tools.binaries.agy, gitBinary: tools.binaries.git, repository: root, worktree: target,
               env: tools.verifierEnv, runDir, task, candidateSha, conversationId: fresh ? undefined : conversationId,
               number: verifierCount, invoke: hooks.verifierInvoke });
             ledger.add('verifier', output.tokens);

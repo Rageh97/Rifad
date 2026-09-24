@@ -38,6 +38,7 @@ export async function createDetached(binary, repository, runRoot, target, sha) {
 export async function removeWorktree(binary, repository, runRoot, target) {
   assertRunPath(runRoot, target);
   if (existsSync(target)) await git(binary, repository, ['worktree', 'remove', '--force', target]);
+  if (existsSync(target)) throw new Error('PROTOCOL_VIOLATION: WORKTREE_CLEANUP_FAILED');
 }
 
 export async function changedPaths(binary, worktree) {
