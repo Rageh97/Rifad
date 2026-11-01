@@ -4,6 +4,11 @@
     "strict": true, "noUncheckedIndexedAccess": true, "exactOptionalPropertyTypes": true,
     "esModuleInterop": true, "experimentalDecorators": true, "emitDecoratorMetadata": true,
     "forceConsistentCasingInFileNames": true, "skipLibCheck": true,
-    "baseUrl": ".", "paths": { "@rifad/runtime-config": ["libs/shared/runtime-config/src/index.ts"] }
+    "baseUrl": ".", "paths": {
+      "@rifad/runtime-config": ["libs/shared/runtime-config/src/index.ts"],
+      "@rifad/kernel": ["libs/shared/kernel/src/index.ts"],
+      "@rifad/request-context": ["libs/shared/request-context/src/index.ts"],
+      "@rifad/http-platform": ["libs/shared/http-platform/src/index.ts"]
+    }
   }
 }

@@ -25,4 +25,4 @@ Validate bounded input; default deny for unavailable required authorization cont
 
 No real credentials/customer data in local fixtures. Secret scanning uses pinned tooling; test canaries are synthetic and constructed in memory. Nonproduction must never obtain production secret permissions. PR workflows run without production secrets or privileged deployment rights. Review dependency vulnerabilities; scanner/advisory outages are failures or explicitly pending verification, never clean results.
 
-Batch 1 implements configuration/redaction, source scanning and dependency review only. It does not implement RLS, authentication, payment acceptance, encryption-at-rest or production credential isolation.
+Batch 1 implements configuration/redaction, source scanning and dependency review. B004 adds request context that never derives identity or tenant scope from headers, and an error body with fixed transport messages and no stack/SQL text. It does not implement RLS, authentication, payment acceptance, encryption-at-rest or production credential isolation.

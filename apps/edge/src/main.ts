@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { Controller, Get, Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
+import { configureHttpPlatform } from '@rifad/http-platform';
 import { ConfigError, loadConfig } from '@rifad/runtime-config';
 
 @Controller()
@@ -19,6 +20,7 @@ async function bootstrap(): Promise<void> {
   const config = loadConfig('edge', process.env);
   // Framework logging is disabled until the scoped structured logging task exists.
   const app = await NestFactory.create<NestFastifyApplication>(EdgeRoot, new FastifyAdapter({ logger: false }), { logger: false });
+  configureHttpPlatform(app);
   let stopping = false;
   const stop = async () => {
     if (stopping) return;

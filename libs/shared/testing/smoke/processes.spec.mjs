@@ -49,8 +49,12 @@ for(const runtime of ['edge','api','worker']) {
     const state=launch(runtime,{RIFAD_PORT:String(port)});
     try {
       assert.deepEqual(await ready(state,port),{status:'alive',runtime,capability:'batch-1-liveness-only'});
-      const missing=await fetch('http://127.0.0.1:'+port+'/api/v1/checks');
+      const missing=await fetch('http://127.0.0.1:'+port+'/api/v1/checks',{headers:{'x-correlation-id':'smoke-'+runtime}});
       assert.equal(missing.status,404);
+      assert.equal(missing.headers.get('x-correlation-id'),'smoke-'+runtime);
+      const body=await missing.json();
+      assert.deepEqual(body,{error:{code:'NOT_FOUND',message:'Resource was not found.',requestId:missing.headers.get('x-request-id')}});
+      assert.match(body.error.requestId,/^[0-9a-f-]{36}$/);
       state.child.send('shutdown');
       assert.equal((await within(state.exited,5000)).code,0);
       assert.equal(state.output().stderr,'');
