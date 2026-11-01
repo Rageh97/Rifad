@@ -1,9 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { readFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { unzipSync, zipSync, strFromU8, strToU8 } from 'fflate';
 import { extract, verify } from './extract-architecture.mjs';
-import { checkGovernance, validateExceptions, validateTaskTable } from './check-governance.mjs';
+import { checkGovernance, validateBatches, validateExceptions, validateInstructionScopes } from './check-governance.mjs';
+import { discoverUnitTests } from '../run-unit-tests.mjs';
 
 test('source rendition is deterministic and contains all sections, tables, paragraphs and ADR entries', () => {
   const result = verify();
@@ -28,14 +31,34 @@ test('governance links, required files and root/Edge scoped instruction inventor
   const result = checkGovernance();
   assert.deepEqual(result.scopes, ['AGENTS.md','apps/edge/AGENTS.md']);
   assert.deepEqual(result.warnings, []);
+  const manifest = JSON.parse(readFileSync('docs/work/governance.json','utf8'));
+  assert.throws(()=>validateInstructionScopes([...result.scopes, 'libs/unregistered/AGENTS.md'], manifest), /scope drift/);
+  assert.throws(()=>validateInstructionScopes(['AGENTS.md'], manifest), /scope drift/);
 });
 
 test('batch scope/dependency/status violations fail', () => {
-  const source = readFileSync('docs/work/batches/B001.md','utf8');
-  validateTaskTable(source);
-  assert.throws(()=>validateTaskTable(source.replace('| M0-001.a | M0-038.a |', '| M0-001.a | M0-999.a |')), /dependency/);
-  assert.throws(()=>validateTaskTable(source.replace('M0-054.a','M0-999.a')), /scope|dependency/);
-  assert.throws(()=>validateTaskTable(source.replace(/^Status:.*$/m,'Status: imaginary')), /status/);
+  const manifest = JSON.parse(readFileSync('docs/work/governance.json','utf8'));
+  const batches = Object.fromEntries(manifest.batches.map(({ id }) => [id, readFileSync('docs/work/batches/' + id + '.md','utf8')]));
+  validateBatches(batches, manifest);
+  const b001 = batches.B001;
+  const mutate = (id, source) => () => validateBatches({ ...batches, [id]: source }, manifest);
+  assert.throws(mutate('B001', b001.replace('| M0-001.a | M0-038.a |', '| M0-001.a | M0-999.a |')), /dependency/);
+  assert.throws(mutate('B001', b001.replace('M0-054.a','M0-999.a')), /scope|dependency/);
+  assert.throws(mutate('B001', b001.replace(/^Status:.*$/m,'Status: imaginary')), /status/);
+  assert.throws(mutate('B001', b001.replace(/^Approval:.*$/m,'Approval: implied')), /approval/);
+  assert.throws(mutate('B001', b001.replace('| Workspace and compatible pinned toolchain | COMPLETE |', '| Workspace and compatible pinned toolchain | PENDING |')), /incomplete task/);
+  assert.throws(mutate('B001', b001.replace('| Workspace and compatible pinned toolchain | COMPLETE |', '| Workspace and compatible pinned toolchain | DONE-ISH |')), /task status/);
+  assert.throws(mutate('B002E', batches.B002E.replace('| M0-036.b |', '| M0-036.a |')), /Duplicate|scope/);
+  assert.throws(()=>validateBatches({ ...batches, B999: b001 }, manifest), /manifest differ/);
+  assert.throws(()=>validateBatches(batches, { batches: [...manifest.batches].reverse() }), /dependency/);
+  assert.throws(()=>validateBatches(batches, { batches: [] }), /manifest/);
+});
+
+test('unit test discovery finds workspace specs and fails on an empty workspace', () => {
+  assert.ok(discoverUnitTests().includes('libs/shared/runtime-config/src/config.spec.ts'));
+  const empty = mkdtempSync(join(tmpdir(), 'rifad-empty-'));
+  try { assert.throws(()=>discoverUnitTests(empty), /No unit test files/); }
+  finally { rmSync(empty, { recursive: true, force: true }); }
 });
 
 test('no governance exceptions initially; incomplete, expired and architecture-changing exceptions fail', () => {
