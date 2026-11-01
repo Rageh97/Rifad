@@ -8,9 +8,15 @@ enableGlobalVirtualStore: false
 storeDir: .pnpm-store
 confirmModulesPurge: false
 overrides:
-  fastify: 5.12.1
-  smol-toml: 1.7.1
+  fastify: 5.12.7
+  smol-toml: 1.9.1
   ajv@8.17.1: 8.18.0
+  axios: 1.21.0
+  follow-redirects: 1.16.2
+  brace-expansion@5: 5.0.12
+  fast-uri@3: 3.1.9
+  fast-uri@4: 4.2.3
+  minimatch: 11.0.3
 allowBuilds:
   nx: true
   esbuild: true

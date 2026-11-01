@@ -1,19 +1,42 @@
 # Decision register
 
-B001 approval does not close M-1 business/compliance decisions. All entries below remain OPEN / owner to be assigned / deadline before dependent implementation. No fabricated approvals or dates. Each closure must add decision, accountable owner, approver, evidence, affected tasks and date; nonblocking deferral needs rationale and review trigger.
+B001 approval does not close M-1 business/compliance decisions. No fabricated approvals or dates. Each closure must add decision, accountable owner, approver, evidence, affected tasks and date; nonblocking deferral needs rationale and review trigger. Options and impacts for each entry are in the [decision worksheet](decision-worksheet.md); blocked tasks are in the [M0 backlog](backlog/M0.md).
 
-| ID | Required decision | Source |
+Ownership (user chat, 2026-11-01): the team is one developer with agents. The repository owner (Rageh97) is accountable owner and approver for every entry below. Assigning an owner does not close a decision. Deadline for each entry: before the first dependent batch starts.
+
+## Business / compliance decisions
+
+| ID | Required decision | Source | Status |
+| --- | --- | --- | --- |
+| G01 | Baseline / pilot / approved cut | 29.1, M-1-001–003 | OPEN |
+| G02 | NFR / retention / operating envelope | 29.2, M-1-004 | OPEN |
+| G03 | Check / round / correction semantics | 9–10, M-1-005 | OPEN |
+| G04 | Price / stock / UOM / valuation / snapshot policy | 11, M-1-006–008 | OPEN |
+| G05 | M1A real COGS source placement versus M1B dependency | 32.1–32.2, M-1-016/019 | OPEN |
+| G06 | Fiscalization / finalization / external uncertainty / recovery | 12.2, M-1-010/016 | OPEN |
+| G07 | Customer identity / privacy / providers / regions | 22, 29.3, M-1-009/011 | OPEN |
+| G08 | Edge clients / hardware / encryption / projections / recovery | 13, M-1-012/013 | OPEN |
+| G09 | Payment acceptance / PCI / provider policy | 26.1, M-1-017 | OPEN |
+| G10 | Context / event / data capture closure | 6–7, 33–35, M-1-014/015/019 | OPEN |
+| G11 | Delivery capacity and pilot calendar | 32.7, M-1-018 | OPEN; capacity input recorded below |
+| G12 | Identity provider (Cognito/Auth0/alternative), MFA | 35, 15; M0-013 | OPEN |
+| G13 | Organization structure: BusinessUnit/Workspace layer; employee in several branches under one membership | 35, 14; M0-010–012 | OPEN |
+| G14 | Approval limits for refund/discount/stock adjustment by role/amount/branch | 35, 15 | OPEN |
+| G15 | Official metric formulas; channel commission/payment fee actual versus estimated before settlement | 35, 17; M-1-014 | OPEN |
+| G16 | Cloud hosting provider/region and stage (VPS-first versus ECS/Fargate) | 21, 23; ADR-018 | OPEN; depends on G07 |
+
+G05 must resolve actual source-fact capability placement before claiming M1A COGS acceptance. G04 must resolve stock rejection versus kitchen dispatch timing. G06 must distinguish required synchronous prerequisites from fact-notification events and external provider outcomes. G10 includes Membership ownership, canonical void-event producer and exact ordering keys. G12–G16 were added on 2026-11-01 because §35 open questions blocking M0 tasks had no register entry.
+
+## Engineering decisions
+
+| ID | Decision | Status |
 | --- | --- | --- |
-| G01 | Baseline / pilot / approved cut | 29.1, M-1-001–003 |
-| G02 | NFR / retention / operating envelope | 29.2, M-1-004 |
-| G03 | Check / round / correction semantics | 9–10, M-1-005 |
-| G04 | Price / stock / UOM / valuation / snapshot policy | 11, M-1-006–008 |
-| G05 | M1A real COGS source placement versus M1B dependency | 32.1–32.2, M-1-016/019 |
-| G06 | Fiscalization / finalization / external uncertainty / recovery | 12.2, M-1-010/016 |
-| G07 | Customer identity / privacy / providers / regions | 22, 29.3, M-1-009/011 |
-| G08 | Edge clients / hardware / encryption / projections / recovery | 13, M-1-012/013 |
-| G09 | Payment acceptance / PCI / provider policy | 26.1, M-1-017 |
-| G10 | Context / event / data capture closure | 6–7, 33–35, M-1-014/015/019 |
-| G11 | Delivery capacity and pilot calendar | 32.7, M-1-018 |
+| E01 | Real PostgreSQL/Redis for integration tests: Docker Desktop locally plus a Linux CI integration job | DIRECTION APPROVED (user chat, 2026-11-01). Local Docker engine not running on 2026-11-01; starting it is a user action. Adding the job as a third required branch-protection check needs separate explicit approval after it passes. Blocks B005. |
+| E02 | Edge SQLite driver (`node:sqlite` versus `better-sqlite3`) and its encryption path | OPEN; encryption depends on G08. Blocks Edge parts of M0-019/028. |
+| E03 | Re-verify PostgreSQL 18.x, Redis 8.x, Kysely and driver patch/security releases at B005 start (§21 version note) | OPEN; recorded in B005 when executed. |
 
-G05 must resolve actual source-fact capability placement before claiming M1A COGS acceptance. G04 must resolve stock rejection versus kitchen dispatch timing. G06 must distinguish required synchronous prerequisites from fact-notification events and external provider outcomes. G10 includes Membership ownership, canonical void-event producer and exact ordering keys.
+## Delivery capacity input (G11 / M-1-018)
+
+- Capacity: one developer with agents, closest to §32.7 Team A (planning range 22–32 weeks from start, not a commitment).
+- §32.7 cites ZATCA Wave 25 on 2027-02-01. The user stated on 2026-11-01 that this date is not binding for the pilot. Risk: Team A range ends after that date. Review trigger: any pilot customer or contract requiring that wave.
+- G11 stays OPEN until a planning range, critical path and pilot window are approved.

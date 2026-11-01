@@ -35,21 +35,36 @@ export function validateExceptions(records, root, now = new Date()) {
     }
   }
 }
-export function validateTaskTable(markdown) {
-  const rows = [...markdown.matchAll(/^\| (M0-\d{3}\.a) \| ([^|]+) \|/gm)];
-  if (!rows.length) throw new Error('Missing batch tasks');
+const taskStates = new Set(['PENDING','IMPLEMENTING','COMPLETE','IMPLEMENTED—VERIFICATION PENDING','BLOCKED']);
+/** Validates batch records (name -> markdown) against the approved scopes in docs/work/governance.json, in manifest order. */
+export function validateBatches(batches, manifest) {
+  if (!Array.isArray(manifest?.batches) || !manifest.batches.length) throw new Error('Missing batch manifest');
+  const listed = manifest.batches.map(batch => batch.id);
+  if (new Set(listed).size !== listed.length || [...listed].sort().join(',') !== Object.keys(batches).sort().join(',')) throw new Error('Batch records and governance manifest differ');
   const seen = new Set();
-  for (const [,id,dependencies] of rows) {
-    if (seen.has(id)) throw new Error('Duplicate task ID');
-    for (const dependency of dependencies.match(/M0-\d{3}\.a/g) ?? []) {
-      if (!seen.has(dependency)) throw new Error('Unresolved or unordered dependency: ' + dependency);
+  for (const { id, tasks } of manifest.batches) {
+    const markdown = batches[id];
+    const rows = [...markdown.matchAll(/^\| (M0-\d{3}\.[a-z]) \| ([^|]+) \| [^|]+ \| ([^|]+) \|$/gm)];
+    if (!rows.length) throw new Error('Missing batch tasks: ' + id);
+    const own = new Set();
+    for (const [, task, dependencies, state] of rows) {
+      if (seen.has(task) || own.has(task)) throw new Error('Duplicate task ID: ' + task);
+      for (const dependency of dependencies.match(/M0-\d{3}\.[a-z]/g) ?? []) {
+        if (!seen.has(dependency) && !own.has(dependency)) throw new Error('Unresolved or unordered dependency: ' + dependency);
+      }
+      if (!taskStates.has(state.trim())) throw new Error('Invalid task status: ' + task);
+      own.add(task);
     }
-    seen.add(id);
+    if (!Array.isArray(tasks) || own.size !== tasks.length || tasks.some(task => !own.has(task))) throw new Error('Approved batch scope drift: ' + id);
+    const status = markdown.match(/^Status: (IMPLEMENTING|COMPLETE|IMPLEMENTED—VERIFICATION PENDING|BLOCKED)$/m)?.[1];
+    if (!status) throw new Error('Invalid batch status: ' + id);
+    if (status === 'COMPLETE' && rows.some(row => row[3].trim() !== 'COMPLETE')) throw new Error('Complete batch has incomplete task: ' + id);
+    if (!/^Approval: explicit user /m.test(markdown)) throw new Error('Missing approval reference: ' + id);
+    for (const task of own) seen.add(task);
   }
-  const required = ['M0-001.a','M0-002.a','M0-003.a','M0-006.a','M0-036.a','M0-038.a','M0-054.a'];
-  if (seen.size !== required.length || required.some(id => !seen.has(id))) throw new Error('B001 approved scope drift');
-  if (!/^Status: (IMPLEMENTING|COMPLETE|IMPLEMENTED—VERIFICATION PENDING|BLOCKED)$/m.test(markdown)) throw new Error('Invalid batch status');
-  if (!/^Approval: explicit user message/m.test(markdown)) throw new Error('Missing approval reference');
+}
+export function validateInstructionScopes(scopes, manifest) {
+  if (!Array.isArray(manifest?.instructionScopes) || [...scopes].sort().join(',') !== [...manifest.instructionScopes].sort().join(',')) throw new Error('Instruction scope drift');
 }
 export function checkGovernance(root = process.cwd()) {
   const files = filesUnder(root);
@@ -67,12 +82,15 @@ export function checkGovernance(root = process.cwd()) {
       if (relative(root,target).startsWith('..' + sep) || !existsSync(target)) throw new Error('Broken/local-outside link: ' + relative(root,file) + ' -> ' + link);
     }
   }
-  for (const name of ['AGENTS.md','apps/edge/AGENTS.md','docs/work/current.md','docs/engineering/quality.md','docs/engineering/security.md','docs/engineering/performance.md','docs/engineering/verification.md']) {
+  for (const name of ['AGENTS.md','apps/edge/AGENTS.md','docs/work/current.md','docs/work/governance.json','docs/engineering/quality.md','docs/engineering/security.md','docs/engineering/performance.md','docs/engineering/verification.md']) {
     if (!existsSync(resolve(root,name))) throw new Error('Required guidance missing: ' + name);
   }
+  const manifest = JSON.parse(readFileSync(resolve(root,'docs/work/governance.json'),'utf8'));
   const scopes = files.filter(path => path.endsWith('AGENTS.md')).map(path => relative(root,path).split(sep).join('/')).sort();
-  if (scopes.join(',') !== 'AGENTS.md,apps/edge/AGENTS.md') throw new Error('B001 instruction scope drift');
-  validateTaskTable(readFileSync(resolve(root,'docs/work/batches/B001.md'),'utf8'));
+  validateInstructionScopes(scopes, manifest);
+  const batchDirectory = resolve(root,'docs/work/batches');
+  const batches = Object.fromEntries(readdirSync(batchDirectory).filter(name => name.endsWith('.md')).map(name => [name.slice(0,-3), readFileSync(resolve(batchDirectory,name),'utf8')]));
+  validateBatches(batches, manifest);
   validateExceptions(JSON.parse(readFileSync(resolve(root,'docs/architecture/exceptions.json'),'utf8')),root);
   return { files: files.length, scopes, warnings };
 }

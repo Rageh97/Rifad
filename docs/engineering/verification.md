@@ -6,11 +6,12 @@
 | --- | --- |
 | `pnpm check` | lint, typecheck, build, unit, architecture, governance tests, environment/governance/source checks and process smoke |
 | `pnpm check:security` | pinned Secretlint source scan and dependency advisory review (moderate or higher fails) |
+| `pnpm test:unit` | every `*.spec.ts` under apps/ and libs/ (fails when none are discovered) |
 | `pnpm test:architecture` | real ESLint/Nx positive and negative boundary fixtures plus graph classification |
 | `pnpm test:governance` | source extraction and governance positive/negative fixtures |
 | `pnpm test:smoke` | built applications, independent startup, liveness, safe failures and shutdown |
 | `pnpm check:env` | environment example/ignore/toolchain checks |
-| `pnpm check:governance` | instruction/link/task/dependency/exception checks |
+| `pnpm check:governance` | instruction/link/exception checks; every batch record against the approved scopes and order in docs/work/governance.json |
 | `pnpm architecture:verify` | exact regeneration and source checksum comparison |
 | `pnpm architecture:extract` | intentional update of derived files, never source mutation |
 
