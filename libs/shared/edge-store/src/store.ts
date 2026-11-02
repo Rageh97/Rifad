@@ -100,6 +100,23 @@ export const EDGE_MIGRATIONS: readonly EdgeMigration[] = Object.freeze([
       CREATE INDEX local_outbox_sync ON local_outbox (sequence) WHERE synced_at IS NULL AND plane = 'EDGE_TO_CLOUD';
     `,
   },
+  {
+    id: '0002_local_consumer_state',
+    sql: `
+      CREATE TABLE local_consumer_processed (
+        consumer TEXT NOT NULL,
+        event_id TEXT NOT NULL,
+        processed_at TEXT NOT NULL,
+        PRIMARY KEY (consumer, event_id)
+      );
+      CREATE TABLE local_consumer_position (
+        consumer TEXT NOT NULL,
+        ordering_key TEXT NOT NULL,
+        position INTEGER NOT NULL CHECK (position > 0),
+        PRIMARY KEY (consumer, ordering_key)
+      );
+    `,
+  },
 ]);
 
 const checksum = (migration: EdgeMigration) => createHash('sha256').update(migration.id + '\n' + migration.sql).digest('hex');
