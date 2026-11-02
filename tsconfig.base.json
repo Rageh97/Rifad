@@ -6,6 +6,10 @@
     "forceConsistentCasingInFileNames": true, "skipLibCheck": true,
     "baseUrl": ".", "paths": {
       "@rifad/runtime-config": ["libs/shared/runtime-config/src/index.ts"],
+      "@rifad/organizations-contract": ["libs/platform/organizations/contract/src/index.ts"],
+      "@rifad/organizations-domain": ["libs/platform/organizations/domain/src/index.ts"],
+      "@rifad/organizations-application": ["libs/platform/organizations/application/src/index.ts"],
+      "@rifad/organizations-infrastructure": ["libs/platform/organizations/infrastructure/src/index.ts"],
       "@rifad/observability": ["libs/shared/observability/src/index.ts"],
       "@rifad/kernel": ["libs/shared/kernel/src/index.ts"],
       "@rifad/request-context": ["libs/shared/request-context/src/index.ts"],

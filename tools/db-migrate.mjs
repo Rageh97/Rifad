@@ -10,10 +10,13 @@ if (!url || !['postgres:', 'postgresql:'].includes(url.protocol) || !['127.0.0.1
   console.error(JSON.stringify({ event: 'db.migrate.failed', code: 'INVALID_OWNER_URL' }));
   process.exit(1);
 }
-const { createDatabase, migrate } = require('../libs/shared/database/dist/index.js');
+const { createDatabase, migrate, MIGRATIONS } = require('../libs/shared/database/dist/index.js');
+// Every context's migrations run through one migrator in global ID order (platform first).
+const { ORGANIZATIONS_MIGRATIONS } = require('../libs/platform/organizations/infrastructure/dist/index.js');
+const migrations = [...MIGRATIONS, ...ORGANIZATIONS_MIGRATIONS];
 const database = createDatabase(value, { applicationName: 'rifad-migrate', maxConnections: 1 });
 try {
-  const applied = await migrate(database.db);
+  const applied = await migrate(database.db, migrations);
   console.log(JSON.stringify({ event: 'db.migrate.completed', applied }));
 } catch (error) {
   console.error(JSON.stringify({ event: 'db.migrate.failed', code: error?.code ?? error?.name ?? 'MIGRATION_FAILED' }));

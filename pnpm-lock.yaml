@@ -164,6 +164,50 @@ importers:
         specifier: 7.8.2
         version: 7.8.2
 
+  libs/platform/organizations/application:
+    dependencies:
+      '@rifad/kernel':
+        specifier: workspace:*
+        version: link:../../../shared/kernel
+      '@rifad/organizations-contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@rifad/organizations-domain':
+        specifier: workspace:*
+        version: link:../domain
+
+  libs/platform/organizations/contract: {}
+
+  libs/platform/organizations/domain:
+    dependencies:
+      '@rifad/kernel':
+        specifier: workspace:*
+        version: link:../../../shared/kernel
+      '@rifad/organizations-contract':
+        specifier: workspace:*
+        version: link:../contract
+
+  libs/platform/organizations/infrastructure:
+    dependencies:
+      '@rifad/database':
+        specifier: workspace:*
+        version: link:../../../shared/database
+      '@rifad/kernel':
+        specifier: workspace:*
+        version: link:../../../shared/kernel
+      '@rifad/organizations-application':
+        specifier: workspace:*
+        version: link:../application
+      '@rifad/organizations-contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@rifad/organizations-domain':
+        specifier: workspace:*
+        version: link:../domain
+      kysely:
+        specifier: 0.29.7
+        version: 0.29.7
+
   libs/shared/data-classification:
     dependencies:
       '@rifad/kernel':

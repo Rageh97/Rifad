@@ -5,6 +5,7 @@
   },
   "include": [
     "apps/*/src/**/*.ts",
-    "libs/shared/*/src/**/*.ts"
+    "libs/shared/*/src/**/*.ts",
+    "libs/platform/*/*/src/**/*.ts"
   ]
 }

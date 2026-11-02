@@ -22,7 +22,8 @@ Bounded contexts, owners and data ownership come from v1.4 §§6–7 and §34 (s
 
 ## Business contexts
 
-None implemented yet. Add a row per context when its first slice is authorized:
+Add a row per context when its first slice is authorized.
 
 | Context | Owner | Milestone | Projects (domain / application / infrastructure / api) | Tables owned | Events produced | Public contract |
 | --- | --- | --- | --- | --- | --- | --- |
+| Organizations | Platform (G10: owns Membership) | M0 | organizations-domain / -application / -infrastructure (cloud) | organizations.organization, .branch, .membership | none yet | organizations-contract (`OrganizationDirectory`) |

@@ -1,0 +1,18 @@
+{
+  "name": "organizations-contract",
+  "sourceRoot": "libs/platform/organizations/contract/src",
+  "projectType": "library",
+  "tags": [
+    "scope:organizations",
+    "layer:contract",
+    "runtime:shared"
+  ],
+  "targets": {
+    "build": {
+      "command": "tsc -b libs/platform/organizations/contract",
+      "outputs": [
+        "{projectRoot}/dist"
+      ]
+    }
+  }
+}

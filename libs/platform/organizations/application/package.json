@@ -1,0 +1,25 @@
+{
+  "name": "@rifad/organizations-application",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:organizations",
+      "layer:application",
+      "runtime:shared"
+    ]
+  },
+  "dependencies": {
+    "@rifad/kernel": "workspace:*",
+    "@rifad/organizations-contract": "workspace:*",
+    "@rifad/organizations-domain": "workspace:*"
+  }
+}

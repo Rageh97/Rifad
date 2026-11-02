@@ -1,6 +1,7 @@
 packages:
   - apps/*
   - libs/shared/*
+  - libs/platform/*/*
 engineStrict: true
 saveExact: true
 strictPeerDependencies: true

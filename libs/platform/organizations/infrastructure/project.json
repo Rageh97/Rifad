@@ -1,0 +1,18 @@
+{
+  "name": "organizations-infrastructure",
+  "sourceRoot": "libs/platform/organizations/infrastructure/src",
+  "projectType": "library",
+  "tags": [
+    "scope:organizations",
+    "layer:infrastructure",
+    "runtime:cloud"
+  ],
+  "targets": {
+    "build": {
+      "command": "tsc -b libs/platform/organizations/infrastructure",
+      "outputs": [
+        "{projectRoot}/dist"
+      ]
+    }
+  }
+}
