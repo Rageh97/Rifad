@@ -1,4 +1,5 @@
 import { sql, type Kysely, type QueryExecutorProvider } from 'kysely';
+import type { AuditSink, AuditSinkFactory } from '@rifad/audit-contract';
 import { RUNTIME_ROLE, withTransaction, type Migration } from '@rifad/database';
 import { DomainError } from '@rifad/kernel';
 import type { AuthorizationRepository, AuthorizationUnitOfWork } from '@rifad/authorization-application';
@@ -60,7 +61,7 @@ const toAssignment = (row: AssignmentRow): RoleAssignment => Object.freeze({
   scope: (row.branch_id ? { kind: 'BRANCH', branchId: row.branch_id } : { kind: 'ORGANIZATION' }) as AccessScope,
 });
 
-function repository(trx: QueryExecutorProvider, organizationId: string): AuthorizationRepository {
+function repository(trx: QueryExecutorProvider, organizationId: string, audit?: AuditSink): AuthorizationRepository {
   return Object.freeze({
     async getRole(roleId: string) {
       const row = (await sql<RoleRow>`select * from authorization_ctx.role where organization_id = ${organizationId} and role_id = ${roleId}`.execute(trx)).rows[0];
@@ -70,6 +71,7 @@ function repository(trx: QueryExecutorProvider, organizationId: string): Authori
       try {
         await sql`insert into authorization_ctx.role (organization_id, role_id, name, permissions, version)
           values (${role.organizationId}, ${role.roleId}, ${role.name}, ${[...role.permissions]}::text[], ${role.version})`.execute(trx);
+        await audit?.record({ action: 'authorization.role_defined', resourceType: 'role', resourceId: role.roleId, outcome: 'SUCCEEDED', details: { permissions: role.permissions.join(',') } });
       } catch (error) {
         if ((error as { constraint?: unknown }).constraint === 'role_name_unique') throw new DomainError('ROLE_NAME_EXISTS', 'A role with this name already exists.', 'conflict');
         throw error;
@@ -79,11 +81,14 @@ function repository(trx: QueryExecutorProvider, organizationId: string): Authori
       const result = await sql`update authorization_ctx.role set name = ${role.name}, permissions = ${[...role.permissions]}::text[], version = ${role.version}
         where organization_id = ${role.organizationId} and role_id = ${role.roleId} and version = ${expectedVersion}`.execute(trx);
       if (result.numAffectedRows !== 1n) throw new DomainError('CONCURRENT_MODIFICATION', 'The record was changed by another request.', 'conflict');
+      await audit?.record({ action: 'authorization.role_changed', resourceType: 'role', resourceId: role.roleId, outcome: 'SUCCEEDED', details: { permissions: role.permissions.join(','), version: role.version } });
     },
     async insertAssignment(a: RoleAssignment) {
       try {
         await sql`insert into authorization_ctx.role_assignment (organization_id, assignment_id, membership_id, role_id, branch_id)
           values (${a.organizationId}, ${a.assignmentId}, ${a.membershipId}, ${a.roleId}, ${a.scope.kind === 'BRANCH' ? a.scope.branchId : null})`.execute(trx);
+        await audit?.record({ action: 'authorization.role_assigned', resourceType: 'role_assignment', resourceId: a.assignmentId, outcome: 'SUCCEEDED',
+          details: { membershipId: a.membershipId, roleId: a.roleId, branchId: a.scope.kind === 'BRANCH' ? a.scope.branchId : null } });
       } catch (error) {
         if ((error as { constraint?: unknown }).constraint === 'role_assignment_unique') throw new DomainError('ASSIGNMENT_EXISTS', 'This role is already assigned with this scope.', 'conflict');
         throw error;
@@ -91,7 +96,9 @@ function repository(trx: QueryExecutorProvider, organizationId: string): Authori
     },
     async deleteAssignment(assignmentId: string) {
       const result = await sql`delete from authorization_ctx.role_assignment where organization_id = ${organizationId} and assignment_id = ${assignmentId}`.execute(trx);
-      return result.numAffectedRows === 1n;
+      if (result.numAffectedRows !== 1n) return false;
+      await audit?.record({ action: 'authorization.role_revoked', resourceType: 'role_assignment', resourceId: assignmentId, outcome: 'SUCCEEDED' });
+      return true;
     },
     async rolesFor(membershipId: string) {
       const assignments = (await sql<AssignmentRow>`select * from authorization_ctx.role_assignment
@@ -104,10 +111,11 @@ function repository(trx: QueryExecutorProvider, organizationId: string): Authori
   });
 }
 
-export function postgresAuthorizationUnitOfWork<DB>(db: Kysely<DB>): AuthorizationUnitOfWork {
+/** `audit` records every role and assignment change in the same transaction (M0-017). */
+export function postgresAuthorizationUnitOfWork<DB>(db: Kysely<DB>, audit?: AuditSinkFactory): AuthorizationUnitOfWork {
   return Object.freeze({
     run: <T>(organizationId: string, work: (repo: AuthorizationRepository) => Promise<T>) =>
-      withTransaction(db, { organizationId }, trx => work(repository(trx, organizationId))),
+      withTransaction(db, { organizationId }, trx => work(repository(trx, organizationId, audit?.(trx, organizationId)))),
   });
 }
 

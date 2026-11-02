@@ -1,4 +1,5 @@
 import { sql, type Kysely, type QueryExecutorProvider } from 'kysely';
+import type { AuditSink, AuditSinkFactory } from '@rifad/audit-contract';
 import { RUNTIME_ROLE, withTransaction, type Migration } from '@rifad/database';
 import type { EntitlementRepository, EntitlementsUnitOfWork } from '@rifad/entitlements-application';
 import type { EntitlementQuery, Feature } from '@rifad/entitlements-contract';
@@ -29,7 +30,7 @@ export const ENTITLEMENTS_MIGRATIONS: readonly Migration[] = Object.freeze([
   },
 ]);
 
-function repository(trx: QueryExecutorProvider, organizationId: string): EntitlementRepository {
+function repository(trx: QueryExecutorProvider, organizationId: string, audit?: AuditSink): EntitlementRepository {
   return Object.freeze({
     async get(feature: Feature) {
       const row = (await sql<{ enabled: boolean }>`select enabled from entitlements.organization_feature
@@ -39,14 +40,16 @@ function repository(trx: QueryExecutorProvider, organizationId: string): Entitle
     async upsert(e: OrganizationEntitlement) {
       await sql`insert into entitlements.organization_feature (organization_id, feature, enabled) values (${e.organizationId}, ${e.feature}, ${e.enabled})
         on conflict (organization_id, feature) do update set enabled = excluded.enabled, updated_at = now()`.execute(trx);
+      await audit?.record({ action: 'entitlements.feature_set', resourceType: 'feature', resourceId: e.feature, outcome: 'SUCCEEDED', details: { enabled: e.enabled } });
     },
   });
 }
 
-export function postgresEntitlementsUnitOfWork<DB>(db: Kysely<DB>): EntitlementsUnitOfWork {
+/** `audit` records every entitlement change in the same transaction (M0-017). */
+export function postgresEntitlementsUnitOfWork<DB>(db: Kysely<DB>, audit?: AuditSinkFactory): EntitlementsUnitOfWork {
   return Object.freeze({
     run: <T>(organizationId: string, work: (repo: EntitlementRepository) => Promise<T>) =>
-      withTransaction(db, { organizationId }, trx => work(repository(trx, organizationId))),
+      withTransaction(db, { organizationId }, trx => work(repository(trx, organizationId, audit?.(trx, organizationId)))),
   });
 }
 

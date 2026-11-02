@@ -30,3 +30,4 @@ Add a row per context when its first slice is authorized.
 | Identity | Platform | M0 | identity-contract / -infrastructure (cloud) | identity.external_identity (platform-level) | none | identity-contract (`TokenVerifier`, `UserDirectory`, `authenticate`) |
 | Authorization | Platform | M0 | authorization-domain / -application / -infrastructure (cloud) | authorization_ctx.role, .role_assignment | none | authorization-contract (`AuthorizationQuery`, `PERMISSIONS`) |
 | Entitlements | Platform | M0 | entitlements-domain / -application / -infrastructure (cloud) | entitlements.organization_feature | none | entitlements-contract (`EntitlementQuery`, `featureForPermission`) |
+| Audit | Platform | M0 | audit-contract / -infrastructure (cloud) | audit.audit_event | none | audit-contract (`AuditSink`, `AuditSinkFactory`) |

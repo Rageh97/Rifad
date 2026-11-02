@@ -185,6 +185,23 @@ importers:
         specifier: 7.8.2
         version: 7.8.2
 
+  libs/platform/audit/contract: {}
+
+  libs/platform/audit/infrastructure:
+    dependencies:
+      '@rifad/audit-contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@rifad/database':
+        specifier: workspace:*
+        version: link:../../../shared/database
+      '@rifad/request-context':
+        specifier: workspace:*
+        version: link:../../../shared/request-context
+      kysely:
+        specifier: 0.29.7
+        version: 0.29.7
+
   libs/platform/authorization/application:
     dependencies:
       '@rifad/authorization-contract':
@@ -213,6 +230,9 @@ importers:
 
   libs/platform/authorization/infrastructure:
     dependencies:
+      '@rifad/audit-contract':
+        specifier: workspace:*
+        version: link:../../audit/contract
       '@rifad/authorization-application':
         specifier: workspace:*
         version: link:../application
@@ -254,6 +274,9 @@ importers:
 
   libs/platform/entitlements/infrastructure:
     dependencies:
+      '@rifad/audit-contract':
+        specifier: workspace:*
+        version: link:../../audit/contract
       '@rifad/database':
         specifier: workspace:*
         version: link:../../../shared/database
@@ -312,6 +335,9 @@ importers:
 
   libs/platform/organizations/infrastructure:
     dependencies:
+      '@rifad/audit-contract':
+        specifier: workspace:*
+        version: link:../../audit/contract
       '@rifad/database':
         specifier: workspace:*
         version: link:../../../shared/database

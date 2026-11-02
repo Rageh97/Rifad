@@ -18,6 +18,7 @@
     ]
   },
   "dependencies": {
+    "@rifad/audit-contract": "workspace:*",
     "@rifad/database": "workspace:*",
     "@rifad/entitlements-application": "workspace:*",
     "@rifad/entitlements-contract": "workspace:*",

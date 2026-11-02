@@ -16,7 +16,8 @@ const { ORGANIZATIONS_MIGRATIONS } = require('../libs/platform/organizations/inf
 const { IDENTITY_MIGRATIONS } = require('../libs/platform/identity/infrastructure/dist/index.js');
 const { AUTHORIZATION_MIGRATIONS } = require('../libs/platform/authorization/infrastructure/dist/index.js');
 const { ENTITLEMENTS_MIGRATIONS } = require('../libs/platform/entitlements/infrastructure/dist/index.js');
-const migrations = [...MIGRATIONS, ...ORGANIZATIONS_MIGRATIONS, ...IDENTITY_MIGRATIONS, ...AUTHORIZATION_MIGRATIONS, ...ENTITLEMENTS_MIGRATIONS];
+const { AUDIT_MIGRATIONS } = require('../libs/platform/audit/infrastructure/dist/index.js');
+const migrations = [...MIGRATIONS, ...ORGANIZATIONS_MIGRATIONS, ...IDENTITY_MIGRATIONS, ...AUTHORIZATION_MIGRATIONS, ...ENTITLEMENTS_MIGRATIONS, ...AUDIT_MIGRATIONS];
 const database = createDatabase(value, { applicationName: 'rifad-migrate', maxConnections: 1 });
 try {
   const applied = await migrate(database.db, migrations);

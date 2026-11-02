@@ -28,6 +28,16 @@ export const IDENTITY_MIGRATIONS: readonly Migration[] = Object.freeze([
   },
 ]);
 
+/**
+ * Owner-path provisioning of an external identity (admin bootstrap, M0-039). The runtime role cannot
+ * call this: it has only SELECT on the table. Fails with IDENTITY_ALREADY_PROVISIONED on duplicates.
+ */
+export async function provisionExternalIdentity<DB>(db: Kysely<DB>, input: { issuer: string; subject: string; userId: string }): Promise<void> {
+  const result = await sql`insert into identity.external_identity (issuer, subject, user_id) values (${input.issuer}, ${input.subject}, ${input.userId})
+    on conflict do nothing`.execute(db);
+  if (result.numAffectedRows !== 1n) throw Object.assign(new Error('IDENTITY_ALREADY_PROVISIONED'), { code: 'IDENTITY_ALREADY_PROVISIONED' });
+}
+
 export function postgresUserDirectory<DB>(db: Kysely<DB>): UserDirectory {
   return Object.freeze({
     async findUserId(issuer: string, subject: string) {

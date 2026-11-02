@@ -24,6 +24,7 @@
     "architecture:extract": "node tools/governance/extract-architecture.mjs",
     "architecture:verify": "node tools/governance/extract-architecture.mjs --check",
     "db:migrate": "node tools/db-migrate.mjs",
+    "admin:bootstrap": "node tools/admin-bootstrap.mjs",
     "outbox:failed": "node tools/outbox-failed.mjs",
     "check:security": "secretlint --secretlintignore .secretlintignore \"**/*\" && pnpm audit --audit-level=moderate",
     "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm test:architecture && pnpm test:governance && pnpm test:agent-pipeline && pnpm check:env && pnpm check:governance && pnpm architecture:verify && pnpm test:smoke",

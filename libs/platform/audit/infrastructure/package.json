@@ -1,0 +1,26 @@
+{
+  "name": "@rifad/audit-infrastructure",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:audit",
+      "layer:infrastructure",
+      "runtime:cloud"
+    ]
+  },
+  "dependencies": {
+    "@rifad/audit-contract": "workspace:*",
+    "@rifad/database": "workspace:*",
+    "@rifad/request-context": "workspace:*",
+    "kysely": "0.29.7"
+  }
+}

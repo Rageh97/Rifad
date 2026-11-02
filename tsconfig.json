@@ -41,6 +41,12 @@
       "path": "libs/shared/http-platform"
     },
     {
+      "path": "libs/platform/audit/contract"
+    },
+    {
+      "path": "libs/platform/audit/infrastructure"
+    },
+    {
       "path": "libs/platform/organizations/contract"
     },
     {

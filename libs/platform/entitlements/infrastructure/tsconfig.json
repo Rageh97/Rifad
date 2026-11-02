@@ -24,6 +24,9 @@
     },
     {
       "path": "../domain"
+    },
+    {
+      "path": "../../audit/contract"
     }
   ]
 }
