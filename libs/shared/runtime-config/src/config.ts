@@ -10,6 +10,8 @@ export interface RuntimeConfig {
   readonly relayDatabaseUrl?: string;
   /** Worker only: dedicated queue Redis; Edge never uses BullMQ/Redis (ADR-041). */
   readonly queueRedisUrl?: string;
+  /** Optional local OTLP/HTTP traces endpoint (M0-024); exporting stays off without it. */
+  readonly otelExporterUrl?: string;
 }
 
 export class ConfigError extends Error {
@@ -20,9 +22,9 @@ export class ConfigError extends Error {
 }
 
 const settingsByRuntime: Record<Runtime, readonly string[]> = {
-  api: ['RIFAD_DATABASE_URL'],
-  worker: ['RIFAD_DATABASE_URL', 'RIFAD_RELAY_DATABASE_URL', 'RIFAD_QUEUE_REDIS_URL'],
-  edge: [],
+  api: ['RIFAD_DATABASE_URL', 'RIFAD_OTEL_EXPORTER_URL'],
+  worker: ['RIFAD_DATABASE_URL', 'RIFAD_RELAY_DATABASE_URL', 'RIFAD_QUEUE_REDIS_URL', 'RIFAD_OTEL_EXPORTER_URL'],
+  edge: ['RIFAD_OTEL_EXPORTER_URL'],
 };
 const loopbackHosts = new Set(['127.0.0.1', 'localhost', '[::1]']);
 const explicitPort = (url: URL) => /^[1-9]\d{0,4}$/.test(url.port) && Number(url.port) <= 65535;
@@ -48,6 +50,16 @@ function redisUrl(field: string, value: string): string {
   return value;
 }
 
+/** Local collector only: http(s) loopback with explicit port; no credentials, query or fragment. */
+function exporterUrl(field: string, value: string): string {
+  let url: URL;
+  try { url = new URL(value); } catch { throw new ConfigError(field); }
+  const valid = (url.protocol === 'http:' || url.protocol === 'https:') && loopbackHosts.has(url.hostname) && explicitPort(url)
+    && !url.username && !url.password && !url.search && !url.hash;
+  if (!valid) throw new ConfigError(field);
+  return value;
+}
+
 /** No production/provider configuration surface yet: local and test environments only. */
 export function loadConfig(runtime: Runtime, env: NodeJS.ProcessEnv): RuntimeConfig {
   const environment = env['RIFAD_ENV'] ?? 'local';
@@ -69,5 +81,6 @@ export function loadConfig(runtime: Runtime, env: NodeJS.ProcessEnv): RuntimeCon
     ...optional('databaseUrl', 'RIFAD_DATABASE_URL', databaseUrl),
     ...optional('relayDatabaseUrl', 'RIFAD_RELAY_DATABASE_URL', databaseUrl),
     ...optional('queueRedisUrl', 'RIFAD_QUEUE_REDIS_URL', redisUrl),
+    ...optional('otelExporterUrl', 'RIFAD_OTEL_EXPORTER_URL', exporterUrl),
   });
 }

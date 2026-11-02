@@ -21,6 +21,9 @@
     },
     {
       "path": "../queue"
+    },
+    {
+      "path": "../observability"
     }
   ]
 }

@@ -18,6 +18,9 @@
     },
     {
       "path": "../../libs/shared/logging"
+    },
+    {
+      "path": "../../libs/shared/observability"
     }
   ]
 }

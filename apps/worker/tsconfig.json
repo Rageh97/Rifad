@@ -27,6 +27,9 @@
     },
     {
       "path": "../../libs/shared/outbox-relay"
+    },
+    {
+      "path": "../../libs/shared/observability"
     }
   ]
 }

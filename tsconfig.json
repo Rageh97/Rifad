@@ -5,6 +5,9 @@
       "path": "libs/shared/runtime-config"
     },
     {
+      "path": "libs/shared/observability"
+    },
+    {
       "path": "libs/shared/kernel"
     },
     {

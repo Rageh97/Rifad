@@ -1,4 +1,5 @@
-import { Kysely, PostgresDialect, sql } from 'kysely';
+import { Kysely, PostgresDialect, sql, type LogEvent } from 'kysely';
+import { SpanKind, SpanStatusCode, tracer } from '@rifad/observability';
 import { Pool } from 'pg';
 import type { EventsOutboxTable } from './outbox';
 
@@ -31,12 +32,27 @@ export function createDatabase<DB = PlatformDatabase>(connectionString: string, 
   });
   // An idle client error must not crash the process; the next checkout reconnects.
   pool.on('error', () => undefined);
-  const db = new Kysely<DB>({ dialect: new PostgresDialect({ pool }) });
+  const db = new Kysely<DB>({ dialect: new PostgresDialect({ pool }), log: querySpan });
   let closed = false;
   return Object.freeze({
     db,
     close: async () => { if (!closed) { closed = true; await db.destroy(); } },
   });
+}
+
+/**
+ * One client span per query, created after it completes from Kysely's measured duration. Only the
+ * operation keyword is recorded: SQL text and parameters may contain personal or financial data.
+ */
+function querySpan(event: LogEvent): void {
+  const end = Date.now();
+  const operation = /^\s*([A-Za-z]+)/.exec(event.query.sql)?.[1]?.toUpperCase() ?? 'QUERY';
+  const span = tracer().startSpan('db ' + operation, {
+    kind: SpanKind.CLIENT, startTime: end - event.queryDurationMillis,
+    attributes: { 'db.system.name': 'postgresql', 'db.operation.name': operation },
+  });
+  if (event.level === 'error') span.setStatus({ code: SpanStatusCode.ERROR, message: event.error instanceof Error ? event.error.name : 'Error' });
+  span.end(end);
 }
 
 /** Readiness probe: one bounded round trip. Never throws and never reports connection details. */

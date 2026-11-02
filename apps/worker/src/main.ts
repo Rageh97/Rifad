@@ -5,6 +5,7 @@ import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fa
 import { checkDatabase, createDatabase } from '@rifad/database';
 import { configureHttpPlatform, registerReadiness } from '@rifad/http-platform';
 import { createLogger } from '@rifad/logging';
+import { initTracing } from '@rifad/observability';
 import { startRelay, type RelayHandle } from '@rifad/outbox-relay';
 import { checkQueue, createEventQueue } from '@rifad/queue';
 import { ConfigError, loadConfig } from '@rifad/runtime-config';
@@ -24,6 +25,8 @@ const logger = createLogger({ runtime: 'worker' });
 
 async function bootstrap(): Promise<void> {
   const config = loadConfig('worker', process.env);
+  // Before the HTTP app so every request span and log line carries trace context (M0-024).
+  const tracing = initTracing({ runtime: 'worker', ...(config.otelExporterUrl ? { exporterUrl: config.otelExporterUrl } : {}) });
   // Framework logging stays disabled; the structured logger writes redacted JSON lines instead.
   const app = await NestFactory.create<NestFastifyApplication>(WorkerRoot, new FastifyAdapter({ logger: false }), { logger: false });
   configureHttpPlatform(app, logger);
@@ -51,6 +54,7 @@ async function bootstrap(): Promise<void> {
     stopping = true;
     await app.close();
     await closeResources();
+    await tracing.shutdown();
     process.exitCode = 0;
   };
   process.once('SIGTERM', () => { void stop(); });
@@ -64,6 +68,7 @@ async function bootstrap(): Promise<void> {
   } catch {
     await app.close();
     await closeResources();
+    await tracing.shutdown();
     throw new Error('LISTEN_FAILED');
   }
   if (relayDatabase && queue) {

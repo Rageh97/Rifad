@@ -1,7 +1,24 @@
 {
-  "name": "@rifad/logging", "version": "0.0.0", "private": true,
-  "main": "./dist/index.js", "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "nx": { "tags": ["scope:shared", "layer:infrastructure", "runtime:shared"] },
-  "dependencies": { "@rifad/request-context": "workspace:*" }
+  "name": "@rifad/logging",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "layer:infrastructure",
+      "runtime:shared"
+    ]
+  },
+  "dependencies": {
+    "@rifad/observability": "workspace:*",
+    "@rifad/request-context": "workspace:*"
+  }
 }

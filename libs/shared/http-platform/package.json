@@ -23,6 +23,7 @@
     "@nestjs/platform-fastify": "11.2.5",
     "@rifad/kernel": "workspace:*",
     "@rifad/logging": "workspace:*",
+    "@rifad/observability": "workspace:*",
     "@rifad/request-context": "workspace:*",
     "fastify": "5.12.7",
     "reflect-metadata": "0.2.2",

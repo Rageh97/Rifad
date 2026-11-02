@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely';
 import type { Queue } from 'bullmq';
 import { EnvelopeError, validateEnvelope, type EventEnvelope } from '@rifad/events';
+import { SpanKind, SpanStatusCode, contextFromTraceparent, tracer } from '@rifad/observability';
 
 export interface RelayOptions {
   readonly batchSize?: number;
@@ -23,7 +24,7 @@ interface OutboxRow {
   event_id: string; organization_id: string; branch_id: string | null; event_type: string; event_version: number;
   plane: EventEnvelope['plane']; ordering: EventEnvelope['ordering']; aggregate_type: string; aggregate_id: string;
   aggregate_version: string; occurred_at: Date; correlation_id: string; causation_id: string | null; idempotency_key: string;
-  payload: unknown; attempts: number;
+  payload: unknown; attempts: number; trace_parent: string | null;
 }
 
 function toEnvelope(row: OutboxRow): EventEnvelope {
@@ -58,7 +59,7 @@ export async function relayOnce<DB>(db: Kysely<DB>, queue: Queue, options: Relay
   return db.transaction().execute(async trx => {
     const rows = (await sql<OutboxRow>`
       select event_id, organization_id, branch_id, event_type, event_version, plane, ordering, aggregate_type, aggregate_id,
-             aggregate_version, occurred_at, correlation_id, causation_id, idempotency_key, payload, attempts
+             aggregate_version, occurred_at, correlation_id, causation_id, idempotency_key, payload, attempts, trace_parent
       from events.outbox where status = 'PENDING' and available_at <= now()
       order by recorded_at, event_id limit ${batchSize} for update skip locked`.execute(trx)).rows;
     let published = 0, retried = 0, failed = 0;
@@ -72,9 +73,17 @@ export async function relayOnce<DB>(db: Kysely<DB>, queue: Queue, options: Relay
         failed++;
         continue;
       }
+      // The publish span continues the writer's trace stored with the row (API -> DB -> worker, M0-024).
+      const span = tracer().startSpan('outbox publish', {
+        kind: SpanKind.PRODUCER,
+        attributes: { 'messaging.system': 'bullmq', 'messaging.operation.name': 'publish', 'rifad.event_type': envelope.eventType, 'rifad.aggregate_type': envelope.aggregateType },
+      }, contextFromTraceparent(row.trace_parent));
       try {
         await withTimeout(queue.add(envelope.eventType, envelope, { jobId: envelope.eventId }), publishTimeoutMs);
+        span.end();
       } catch {
+        span.setStatus({ code: SpanStatusCode.ERROR, message: 'QUEUE_UNAVAILABLE' });
+        span.end();
         const attempts = row.attempts + 1;
         const delayMs = Math.min(retryBaseMs * 2 ** (attempts - 1), 15 * 60_000);
         const status = attempts >= maxAttempts ? 'FAILED' : 'PENDING';

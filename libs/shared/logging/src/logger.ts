@@ -1,3 +1,4 @@
+import { activeTraceIds } from '@rifad/observability';
 import { currentContext, type RequestContext } from '@rifad/request-context';
 
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
@@ -107,7 +108,7 @@ export function createLogger(options: LoggerOptions): Logger {
   const write = (level: LogLevel, event: string, fields: LogFields = {}) => {
     if (order[level] < threshold) return;
     if (!eventPattern.test(event)) throw new TypeError('Log event must be a lowercase dotted name');
-    const entry = { ...redact(fields), time: now().toISOString(), level, runtime: options.runtime, event, ...contextOf(currentContext()) };
+    const entry = { ...redact(fields), time: now().toISOString(), level, runtime: options.runtime, event, ...contextOf(currentContext()), ...activeTraceIds() };
     sink(level, JSON.stringify(entry));
   };
   return Object.freeze({

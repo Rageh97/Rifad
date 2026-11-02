@@ -15,6 +15,9 @@
   "references": [
     {
       "path": "../request-context"
+    },
+    {
+      "path": "../observability"
     }
   ]
 }

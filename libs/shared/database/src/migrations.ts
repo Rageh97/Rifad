@@ -120,6 +120,15 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
       GRANT SELECT, INSERT ON sync.inbox TO ${RUNTIME_ROLE};
     `,
   },
+  {
+    id: '0005_events_outbox_trace',
+    owner: 'events',
+    sql: `
+      -- W3C traceparent of the writer's span (M0-024); transport metadata only, never business data.
+      ALTER TABLE events.outbox
+        ADD COLUMN trace_parent text CHECK (trace_parent ~ '^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$');
+    `,
+  },
 ]);
 
 export class MigrationError extends Error {

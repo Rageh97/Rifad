@@ -1,0 +1,5 @@
+{
+  "name": "observability", "sourceRoot": "libs/shared/observability/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:infrastructure", "runtime:shared"],
+  "targets": { "build": { "command": "tsc -b libs/shared/observability", "outputs": ["{projectRoot}/dist"] } }
+}

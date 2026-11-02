@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@rifad/events": "workspace:*",
+    "@rifad/observability": "workspace:*",
     "kysely": "0.29.7",
     "pg": "8.23.1"
   },
