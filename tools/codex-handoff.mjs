@@ -11,9 +11,10 @@ const option = name => { const index = args.indexOf(name); return index >= 0 ? a
 const batch = option('--batch');
 const summary = option('--summary') ?? '';
 const timeoutMinutes = Number(option('--timeout-minutes') ?? 60);
-// Optional overrides; without them Codex uses the model and effort from the user's ~/.codex/config.toml.
-const model = option('--model');
-const effort = option('--effort');
+// Defaults agreed with the user on 2026-11-02: gpt-6-sol (the 6.1 models are unavailable to Codex on the
+// account's ChatGPT sign-in) at medium effort. Both can be overridden per run.
+const model = option('--model') ?? 'gpt-6-sol';
+const effort = option('--effort') ?? 'medium';
 if ((model && !/^[A-Za-z0-9._-]+$/.test(model)) || (effort && !/^[a-z]+$/.test(effort))) { console.error('Invalid --model or --effort'); process.exit(2); }
 if (!batch || !/^B\d{3}[A-Za-z]?$/.test(batch)) {
   console.error('USAGE: pnpm codex:handoff -- --batch B00X --summary "what changed" [--model NAME] [--effort LEVEL] [--timeout-minutes 60]');
@@ -63,7 +64,7 @@ const pinnedBin = join(root, '.tools', 'package', 'bin');
 const env = { ...process.env, PATH: pinnedBin + (process.platform === 'win32' ? ';' : ':') + (process.env.PATH ?? '') };
 const codexArgs = ['--approve-for-me', 'exec', '--json', '--output-schema', schemaPath, '--output-last-message', resultPath,
   '--sandbox', 'workspace-write', ...(model ? ['-m', model] : []), ...(effort ? ['-c', 'model_reasoning_effort=' + effort] : []), '-C', root, '-'];
-console.log(JSON.stringify({ event: 'codex.handoff.started', batch, runDir, model: model ?? 'config default', effort: effort ?? 'config default' }));
+console.log(JSON.stringify({ event: 'codex.handoff.started', batch, runDir, model, effort }));
 const child = spawn('codex', codexArgs, { cwd: root, env, shell: process.platform === 'win32', stdio: ['pipe', 'pipe', 'pipe'] });
 child.stdin.end(prompt);
 let transcript = '';
