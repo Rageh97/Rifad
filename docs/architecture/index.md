@@ -15,6 +15,6 @@ Run `pnpm architecture:extract` only when intentionally refreshing a source-appr
 | Decisions and milestones | §§28–32, 35 |
 | Official sources | §37 |
 
-The baseline ADR index is §28 of the rendition; do not invent full ADR rationales. New approved decisions may be individual ADR files later. Planning choices and unresolved items live in the [decision register](../work/decisions.md), not as amendments to the source.
+The baseline ADR index is §28 of the rendition; the [ADR register](adr/index.md) tracks status and enforcement, and do not invent full ADR rationales. Implementation catalogs: [events](../catalogs/event-catalog.md), [authority](../catalogs/authority-matrix.md), [modules](../catalogs/module-catalog.md), [compliance](../catalogs/compliance-catalog.md). New approved decisions may be individual ADR files later. Planning choices and unresolved items live in the [decision register](../work/decisions.md), not as amendments to the source.
 
 The root constitution summarizes source constraints. Scoped guidance adds local procedure only. If source, summary, code or task disagree, expose the conflict; task status cannot override architecture.
