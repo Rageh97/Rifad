@@ -12,6 +12,8 @@ export interface RuntimeConfig {
   readonly queueRedisUrl?: string;
   /** Optional local OTLP/HTTP traces endpoint (M0-024); exporting stays off without it. */
   readonly otelExporterUrl?: string;
+  /** API only: provider-neutral OIDC settings (G12); all three or none. */
+  readonly oidc?: { readonly issuer: string; readonly audience: string; readonly jwksUrl: string };
 }
 
 export class ConfigError extends Error {
@@ -22,7 +24,7 @@ export class ConfigError extends Error {
 }
 
 const settingsByRuntime: Record<Runtime, readonly string[]> = {
-  api: ['RIFAD_DATABASE_URL', 'RIFAD_OTEL_EXPORTER_URL'],
+  api: ['RIFAD_DATABASE_URL', 'RIFAD_OTEL_EXPORTER_URL', 'RIFAD_OIDC_ISSUER', 'RIFAD_OIDC_AUDIENCE', 'RIFAD_OIDC_JWKS_URL'],
   worker: ['RIFAD_DATABASE_URL', 'RIFAD_RELAY_DATABASE_URL', 'RIFAD_QUEUE_REDIS_URL', 'RIFAD_OTEL_EXPORTER_URL'],
   edge: ['RIFAD_OTEL_EXPORTER_URL'],
 };
@@ -60,6 +62,26 @@ function exporterUrl(field: string, value: string): string {
   return value;
 }
 
+/** OIDC issuer/JWKS: https, or http on loopback for local test providers; no credentials, query or fragment. */
+function oidcUrl(field: string, value: string): string {
+  let url: URL;
+  try { url = new URL(value); } catch { throw new ConfigError(field); }
+  const valid = (url.protocol === 'https:' || (url.protocol === 'http:' && loopbackHosts.has(url.hostname)))
+    && !url.username && !url.password && !url.search && !url.hash && value.length <= 500;
+  if (!valid) throw new ConfigError(field);
+  return value;
+}
+
+function oidcSettings(env: NodeJS.ProcessEnv): RuntimeConfig['oidc'] | undefined {
+  const issuer = env['RIFAD_OIDC_ISSUER'];
+  const audience = env['RIFAD_OIDC_AUDIENCE'];
+  const jwksUrl = env['RIFAD_OIDC_JWKS_URL'];
+  if (issuer === undefined && audience === undefined && jwksUrl === undefined) return undefined;
+  if (issuer === undefined || audience === undefined || jwksUrl === undefined) throw new ConfigError('RIFAD_OIDC_*');
+  if (!/^[A-Za-z0-9._:/-]{1,200}$/.test(audience)) throw new ConfigError('RIFAD_OIDC_AUDIENCE');
+  return Object.freeze({ issuer: oidcUrl('RIFAD_OIDC_ISSUER', issuer), audience, jwksUrl: oidcUrl('RIFAD_OIDC_JWKS_URL', jwksUrl) });
+}
+
 /** No production/provider configuration surface yet: local and test environments only. */
 export function loadConfig(runtime: Runtime, env: NodeJS.ProcessEnv): RuntimeConfig {
   const environment = env['RIFAD_ENV'] ?? 'local';
@@ -76,11 +98,13 @@ export function loadConfig(runtime: Runtime, env: NodeJS.ProcessEnv): RuntimeCon
     const value = env[field];
     return (value === undefined ? {} : { [key]: parse(field, value) }) as Partial<Record<K, string>>;
   };
+  const oidc = runtime === 'api' ? oidcSettings(env) : undefined;
   return Object.freeze({
     runtime, environment, host: '127.0.0.1' as const, port: Number(rawPort),
     ...optional('databaseUrl', 'RIFAD_DATABASE_URL', databaseUrl),
     ...optional('relayDatabaseUrl', 'RIFAD_RELAY_DATABASE_URL', databaseUrl),
     ...optional('queueRedisUrl', 'RIFAD_QUEUE_REDIS_URL', redisUrl),
     ...optional('otelExporterUrl', 'RIFAD_OTEL_EXPORTER_URL', exporterUrl),
+    ...(oidc ? { oidc } : {}),
   });
 }

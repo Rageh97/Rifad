@@ -9,7 +9,7 @@ export type Permission = string;
 
 /** Permissions known to the platform today. Contexts add theirs as they ship. */
 export const PERMISSIONS = Object.freeze([
-  'organizations.manage', 'branches.manage', 'members.manage', 'roles.manage', 'entitlements.manage',
+  'organizations.read', 'organizations.manage', 'branches.manage', 'members.manage', 'roles.manage', 'entitlements.manage',
   'checks.create', 'checks.read', 'checks.submit_round',
 ] as const);
 

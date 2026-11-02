@@ -1,5 +1,5 @@
 /** Domain-meaningful failure kinds; transport mappings (HTTP and others) live outside the domain. */
-export type DomainErrorCategory = 'validation' | 'not_found' | 'conflict' | 'forbidden' | 'rule_violation';
+export type DomainErrorCategory = 'validation' | 'not_found' | 'conflict' | 'forbidden' | 'unauthenticated' | 'rule_violation';
 
 const codePattern = /^[A-Z][A-Z0-9]*(?:_[A-Z0-9]+)*$/;
 

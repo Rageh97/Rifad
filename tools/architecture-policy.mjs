@@ -22,7 +22,9 @@ export function projectInventory(root = process.cwd()) {
   return projects;
 }
 export function constraints(projects) {
-  const scopes=[...new Set(projects.flatMap(p=>p.tags.filter(tag=>tag.startsWith('scope:'))))];
+  // Composition roots (apps) wire contexts together, so their scope is not an isolation boundary;
+  // every other project may depend only on its own scope, shared code and public contracts.
+  const scopes=[...new Set(projects.filter(p=>!p.tags.includes('layer:composition')).flatMap(p=>p.tags.filter(tag=>tag.startsWith('scope:'))))];
   return [
     { sourceTag:'layer:domain', onlyDependOnLibsWithTags:['layer:domain','layer:contract'], bannedExternalImports:['@nestjs/*','kysely','better-sqlite3','sqlite3','redis','ioredis','bullmq','@aws-sdk/*'] },
     { sourceTag:'layer:contract', onlyDependOnLibsWithTags:['layer:contract'] },

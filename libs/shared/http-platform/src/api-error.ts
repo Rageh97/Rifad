@@ -7,7 +7,7 @@ export interface ApiErrorBody {
 }
 
 const categoryStatus: Record<DomainErrorCategory, number> = {
-  validation: 400, forbidden: 403, not_found: 404, conflict: 409, rule_violation: 422,
+  validation: 400, unauthenticated: 401, forbidden: 403, not_found: 404, conflict: 409, rule_violation: 422,
 };
 
 const transportErrors: Record<number, readonly [string, string]> = {

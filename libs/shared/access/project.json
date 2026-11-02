@@ -1,0 +1,18 @@
+{
+  "name": "access",
+  "sourceRoot": "libs/shared/access/src",
+  "projectType": "library",
+  "tags": [
+    "scope:shared",
+    "layer:infrastructure",
+    "runtime:shared"
+  ],
+  "targets": {
+    "build": {
+      "command": "tsc -b libs/shared/access",
+      "outputs": [
+        "{projectRoot}/dist"
+      ]
+    }
+  }
+}

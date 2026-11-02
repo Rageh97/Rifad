@@ -81,3 +81,16 @@ export function requireContext(): RequestContext {
 export function currentCorrelationId(): string {
   return storage.getStore()?.correlationId ?? createRequestContext().correlationId;
 }
+
+/**
+ * Adds identity and tenant scope proven by the security pipeline (M0-016) to the current request.
+ * Only the pipeline calls this, after authentication, membership and permission checks; caller
+ * headers never reach it. It replaces the store for the rest of this request's async execution and
+ * keeps the request and correlation IDs.
+ */
+export function bindVerifiedIdentity(fields: Pick<ContextInput, 'userId' | 'sessionId' | 'organizationId' | 'branchId'>): RequestContext {
+  const current = requireContext();
+  const next = createRequestContext({ ...current, ...fields });
+  storage.enterWith(next);
+  return next;
+}

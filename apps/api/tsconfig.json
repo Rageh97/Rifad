@@ -24,6 +24,27 @@
     },
     {
       "path": "../../libs/shared/observability"
+    },
+    {
+      "path": "../../libs/shared/access"
+    },
+    {
+      "path": "../../libs/shared/request-context"
+    },
+    {
+      "path": "../../libs/platform/authorization/infrastructure"
+    },
+    {
+      "path": "../../libs/platform/entitlements/infrastructure"
+    },
+    {
+      "path": "../../libs/platform/identity/infrastructure"
+    },
+    {
+      "path": "../../libs/platform/organizations/contract"
+    },
+    {
+      "path": "../../libs/platform/organizations/infrastructure"
     }
   ]
 }

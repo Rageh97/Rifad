@@ -1,0 +1,35 @@
+{
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts"
+  ],
+  "references": [
+    {
+      "path": "../kernel"
+    },
+    {
+      "path": "../request-context"
+    },
+    {
+      "path": "../../platform/authorization/contract"
+    },
+    {
+      "path": "../../platform/entitlements/contract"
+    },
+    {
+      "path": "../../platform/identity/contract"
+    },
+    {
+      "path": "../../platform/organizations/contract"
+    }
+  ]
+}

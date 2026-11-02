@@ -83,6 +83,9 @@
       "path": "libs/platform/entitlements/infrastructure"
     },
     {
+      "path": "libs/shared/access"
+    },
+    {
       "path": "apps/api"
     },
     {
