@@ -70,8 +70,18 @@ child.stdin.end(prompt);
 let transcript = '';
 child.stdout.on('data', chunk => { transcript += chunk; });
 child.stderr.on('data', chunk => { transcript += chunk; });
-const timer = setTimeout(() => child.kill(), timeoutMinutes * 60_000);
-const code = await new Promise(done => child.on('close', done));
+// On Windows Codex runs under a shell; killing only the shell would orphan Codex, so kill the whole tree.
+const killTree = () => {
+  if (process.platform === 'win32') spawnSync('taskkill', ['/PID', String(child.pid), '/T', '/F'], { windowsHide: true });
+  else child.kill('SIGKILL');
+};
+let timedOut = false;
+const timer = setTimeout(() => { timedOut = true; killTree(); }, timeoutMinutes * 60_000);
+// 'exit' plus a short grace period: an orphaned grandchild holding stdio open must not block the report.
+const code = await new Promise(done => {
+  child.on('exit', exitCode => setTimeout(() => done(exitCode), 5_000));
+  child.on('error', () => done(-1));
+});
 clearTimeout(timer);
 writeFileSync(join(runDir, 'transcript.jsonl'), transcript);
 
@@ -81,7 +91,7 @@ const newlyChanged = changedPaths().filter(path => !before.has(path));
 const outOfScope = newlyChanged.filter(path => !allowed.some(pattern => pattern.test(path)));
 const outcome = {
   event: 'codex.handoff.finished', batch, exitCode: code, runDir,
-  status: outOfScope.length ? 'SCOPE_VIOLATION' : report?.status ?? 'NO_REPORT',
+  status: outOfScope.length ? 'SCOPE_VIOLATION' : timedOut ? 'TIMEOUT' : report?.status ?? 'NO_REPORT',
   outOfScope, newlyChanged, report,
 };
 writeFileSync(join(runDir, 'outcome.json'), JSON.stringify(outcome, null, 2));
