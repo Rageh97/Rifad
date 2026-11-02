@@ -58,6 +58,13 @@ for(const runtime of ['edge','api','worker']) {
       state.child.send('shutdown');
       assert.equal((await within(state.exited,5000)).code,0);
       assert.equal(state.output().stderr,'');
+      const lines=state.output().stdout.trim().split('\n').map(line=>JSON.parse(line));
+      assert.ok(lines.every(line=>line.runtime===runtime && typeof line.time==='string' && line.level==='info'));
+      assert.deepEqual(lines.filter(line=>line.event==='runtime.started').map(({environment,host,port:logged})=>({environment,host,logged})),[{environment:'test',host:'127.0.0.1',logged:port}]);
+      const request=lines.find(line=>line.event==='http.request.completed' && line.path==='/api/v1/checks');
+      assert.equal(request?.correlationId,'smoke-'+runtime);
+      assert.equal(request?.requestId,body.error.requestId);
+      assert.equal(request?.statusCode,404);
     } finally { if(state.child.exitCode===null) {state.child.kill();await within(state.exited,5000);} }
   });
 }

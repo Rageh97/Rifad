@@ -12,7 +12,7 @@ const eslintBin=resolve(require.resolve('eslint/package.json'),'../bin/eslint.js
 const nxBin=resolve(require.resolve('nx/package.json'),'../dist/bin/nx.js');
 test('every real project is classified and composition roots do not import each other', () => {
   const projects=projectInventory();
-  assert.deepEqual(projects.map(p=>p.name).sort(),['api','edge','http-platform','kernel','request-context','runtime-config','worker']);
+  assert.deepEqual(projects.map(p=>p.name).sort(),['api','data-classification','edge','http-platform','kernel','logging','request-context','runtime-config','worker']);
   for(const app of ['api','worker','edge']) {
     const source=readFileSync('apps/'+app+'/src/main.ts','utf8');
     assert.ok(!/from ['"].*(?:apps\/|postgres|bullmq|redis|sqlite)/i.test(source));

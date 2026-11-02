@@ -76,6 +76,9 @@ importers:
       '@rifad/http-platform':
         specifier: workspace:*
         version: link:../../libs/shared/http-platform
+      '@rifad/logging':
+        specifier: workspace:*
+        version: link:../../libs/shared/logging
       '@rifad/runtime-config':
         specifier: workspace:*
         version: link:../../libs/shared/runtime-config
@@ -100,6 +103,9 @@ importers:
       '@rifad/http-platform':
         specifier: workspace:*
         version: link:../../libs/shared/http-platform
+      '@rifad/logging':
+        specifier: workspace:*
+        version: link:../../libs/shared/logging
       '@rifad/runtime-config':
         specifier: workspace:*
         version: link:../../libs/shared/runtime-config
@@ -124,6 +130,9 @@ importers:
       '@rifad/http-platform':
         specifier: workspace:*
         version: link:../../libs/shared/http-platform
+      '@rifad/logging':
+        specifier: workspace:*
+        version: link:../../libs/shared/logging
       '@rifad/runtime-config':
         specifier: workspace:*
         version: link:../../libs/shared/runtime-config
@@ -133,6 +142,12 @@ importers:
       rxjs:
         specifier: 7.8.2
         version: 7.8.2
+
+  libs/shared/data-classification:
+    dependencies:
+      '@rifad/kernel':
+        specifier: workspace:*
+        version: link:../kernel
 
   libs/shared/http-platform:
     dependencies:
@@ -148,6 +163,9 @@ importers:
       '@rifad/kernel':
         specifier: workspace:*
         version: link:../kernel
+      '@rifad/logging':
+        specifier: workspace:*
+        version: link:../logging
       '@rifad/request-context':
         specifier: workspace:*
         version: link:../request-context
@@ -162,6 +180,12 @@ importers:
         version: 7.8.2
 
   libs/shared/kernel: {}
+
+  libs/shared/logging:
+    dependencies:
+      '@rifad/request-context':
+        specifier: workspace:*
+        version: link:../request-context
 
   libs/shared/request-context: {}
 

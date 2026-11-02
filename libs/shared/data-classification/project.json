@@ -1,0 +1,5 @@
+{
+  "name": "data-classification", "sourceRoot": "libs/shared/data-classification/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:domain", "runtime:shared"],
+  "targets": { "build": { "command": "tsc -b libs/shared/data-classification", "outputs": ["{projectRoot}/dist"] } }
+}

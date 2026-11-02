@@ -3,6 +3,7 @@ import { Controller, Get, Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import { configureHttpPlatform } from '@rifad/http-platform';
+import { createLogger } from '@rifad/logging';
 import { ConfigError, loadConfig } from '@rifad/runtime-config';
 
 @Controller()
@@ -16,11 +17,13 @@ class LivenessController {
 @Module({ controllers: [LivenessController] })
 class ApiRoot {}
 
+const logger = createLogger({ runtime: 'api' });
+
 async function bootstrap(): Promise<void> {
   const config = loadConfig('api', process.env);
-  // Framework logging is disabled until the scoped structured logging task exists.
+  // Framework logging stays disabled; the structured logger writes redacted JSON lines instead.
   const app = await NestFactory.create<NestFastifyApplication>(ApiRoot, new FastifyAdapter({ logger: false }), { logger: false });
-  configureHttpPlatform(app);
+  configureHttpPlatform(app, logger);
   let stopping = false;
   const stop = async () => {
     if (stopping) return;
@@ -40,12 +43,12 @@ async function bootstrap(): Promise<void> {
     await app.close();
     throw new Error('LISTEN_FAILED');
   }
-  process.stdout.write(JSON.stringify({ event: 'runtime.started', runtime: config.runtime, environment: config.environment, host: config.host, port: config.port }) + '\n');
+  logger.info('runtime.started', { environment: config.environment, host: config.host, port: config.port });
 }
 
 void bootstrap().catch(error => {
   const code = error instanceof ConfigError ? 'INVALID_CONFIG' : 'STARTUP_FAILED';
-  process.stderr.write(JSON.stringify({ event: 'runtime.failed', runtime: 'api', code }) + '\n');
+  logger.error('runtime.failed', { code });
   process.exitCode = 1;
   if (process.connected) process.disconnect();
 });

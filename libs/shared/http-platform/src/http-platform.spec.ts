@@ -7,6 +7,7 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { InjectOptions } from 'fastify';
 import { DomainError } from '@rifad/kernel';
+import { createLogger } from '@rifad/logging';
 import { requireContext } from '@rifad/request-context';
 import { configureHttpPlatform, toApiError } from './index';
 
@@ -26,10 +27,12 @@ class ProbeRoot {}
 
 let app: NestFastifyApplication;
 const inject = (options: InjectOptions) => app.getHttpAdapter().getInstance().inject(options);
+const logs: Record<string, unknown>[] = [];
+const logger = createLogger({ runtime: 'test', sink: (_level, line) => logs.push(JSON.parse(line)) });
 
 before(async () => {
   app = await NestFactory.create<NestFastifyApplication>(ProbeRoot, new FastifyAdapter({ logger: false }), { logger: false });
-  configureHttpPlatform(app);
+  configureHttpPlatform(app, logger);
   await app.init();
   await app.getHttpAdapter().getInstance().ready();
 });
@@ -91,4 +94,17 @@ test('error mapping is total for unusual thrown values', () => {
   assert.equal(toApiError({ statusCode: 418 }, 'r').body.error.code, 'REQUEST_REJECTED');
   assert.equal(toApiError({ statusCode: 503 }, 'r').status, 503);
   assert.equal(toApiError(new DomainError('BAD_INPUT', 'Bad input.', 'validation'), 'r').status, 400);
+});
+
+test('each request logs one redacted completion line correlated with the response', async () => {
+  logs.length = 0;
+  const response = await inject({ method: 'GET', url: '/crash?token=' + canary, headers: { 'x-correlation-id': 'trace-9' } });
+  const lines = logs.filter(entry => entry['event'] === 'http.request.completed');
+  assert.equal(lines.length, 1);
+  assert.deepEqual({ ...lines[0], time: undefined, durationMs: undefined }, {
+    method: 'GET', path: '/crash', statusCode: 500, durationMs: undefined, time: undefined, level: 'info', runtime: 'test', event: 'http.request.completed',
+    requestId: response.headers['x-request-id'], correlationId: 'trace-9',
+  });
+  assert.equal(typeof lines[0]?.['durationMs'], 'number');
+  assert.ok(!JSON.stringify(logs).includes(canary));
 });

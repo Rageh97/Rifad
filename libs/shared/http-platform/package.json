@@ -1,13 +1,28 @@
 {
-  "name": "@rifad/http-platform", "version": "0.0.0", "private": true,
-  "main": "./dist/index.js", "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "nx": { "tags": ["scope:shared", "layer:infrastructure", "runtime:shared"] },
+  "name": "@rifad/http-platform",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "layer:infrastructure",
+      "runtime:shared"
+    ]
+  },
   "dependencies": {
     "@nestjs/common": "11.2.5",
     "@nestjs/core": "11.2.5",
     "@nestjs/platform-fastify": "11.2.5",
     "@rifad/kernel": "workspace:*",
+    "@rifad/logging": "workspace:*",
     "@rifad/request-context": "workspace:*",
     "fastify": "5.12.7",
     "reflect-metadata": "0.2.2",
