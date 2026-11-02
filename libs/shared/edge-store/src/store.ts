@@ -16,6 +16,8 @@ export interface EdgeStoreOptions {
   /** Only `test` may open an unencrypted store, and only for `:memory:` or explicit test files. */
   readonly environment: 'local' | 'test';
   readonly identity: EdgeIdentity;
+  /** Context-owned Edge migrations (e.g. Ordering), applied after the store's own, in ID order. */
+  readonly migrations?: readonly EdgeMigration[];
 }
 
 export interface EdgeStore {
@@ -55,7 +57,7 @@ export function openEdgeStore(options: EdgeStoreOptions): EdgeStore {
     db.pragma('journal_mode = WAL');
     db.pragma('synchronous = FULL');
     db.pragma('foreign_keys = ON');
-    migrateEdge(db, EDGE_MIGRATIONS);
+    migrateEdge(db, [...EDGE_MIGRATIONS, ...(options.migrations ?? [])]);
   } catch (error) {
     db.close();
     throw error;
@@ -96,8 +98,8 @@ export const EDGE_MIGRATIONS: readonly EdgeMigration[] = Object.freeze([
         UNIQUE (organization_id, idempotency_key),
         UNIQUE (aggregate_type, aggregate_id, aggregate_version)
       );
-      CREATE INDEX local_outbox_dispatch ON local_outbox (sequence) WHERE dispatched_at IS NULL;
-      CREATE INDEX local_outbox_sync ON local_outbox (sequence) WHERE synced_at IS NULL AND plane = 'EDGE_TO_CLOUD';
+      CREATE INDEX local_outbox_dispatch ON local_outbox (sequence) WHERE dispatched_at IS NULL AND plane = 'EDGE';
+      CREATE INDEX local_outbox_sync ON local_outbox (sequence) WHERE synced_at IS NULL;
     `,
   },
   {

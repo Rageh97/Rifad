@@ -12,6 +12,8 @@
       "@rifad/pricing-contract": ["libs/commerce/pricing/contract/src/index.ts"],
       "@rifad/ordering-contract": ["libs/restaurant/ordering/contract/src/index.ts"],
       "@rifad/ordering-domain": ["libs/restaurant/ordering/domain/src/index.ts"],
+      "@rifad/ordering-application": ["libs/restaurant/ordering/application/src/index.ts"],
+      "@rifad/ordering-edge": ["libs/restaurant/ordering/edge/src/index.ts"],
       "@rifad/audit-contract": ["libs/platform/audit/contract/src/index.ts"],
       "@rifad/audit-infrastructure": ["libs/platform/audit/infrastructure/src/index.ts"],
       "@rifad/identity-contract": ["libs/platform/identity/contract/src/index.ts"],

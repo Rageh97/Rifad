@@ -359,6 +359,21 @@ importers:
         specifier: 0.29.7
         version: 0.29.7
 
+  libs/restaurant/ordering/application:
+    dependencies:
+      '@rifad/kernel':
+        specifier: workspace:*
+        version: link:../../../shared/kernel
+      '@rifad/ordering-contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@rifad/ordering-domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@rifad/pricing-contract':
+        specifier: workspace:*
+        version: link:../../../commerce/pricing/contract
+
   libs/restaurant/ordering/contract:
     dependencies:
       '@rifad/pricing-contract':
@@ -376,6 +391,24 @@ importers:
       '@rifad/pricing-contract':
         specifier: workspace:*
         version: link:../../../commerce/pricing/contract
+
+  libs/restaurant/ordering/edge:
+    dependencies:
+      '@rifad/edge-store':
+        specifier: workspace:*
+        version: link:../../../shared/edge-store
+      '@rifad/kernel':
+        specifier: workspace:*
+        version: link:../../../shared/kernel
+      '@rifad/ordering-application':
+        specifier: workspace:*
+        version: link:../application
+      '@rifad/ordering-domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@rifad/request-context':
+        specifier: workspace:*
+        version: link:../../../shared/request-context
 
   libs/shared/access:
     dependencies:

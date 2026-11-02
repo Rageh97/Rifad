@@ -104,6 +104,12 @@
       "path": "libs/restaurant/ordering/domain"
     },
     {
+      "path": "libs/restaurant/ordering/application"
+    },
+    {
+      "path": "libs/restaurant/ordering/edge"
+    },
+    {
       "path": "apps/api"
     },
     {

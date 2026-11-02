@@ -50,21 +50,24 @@ const toLocal = (row: Row): LocalEvent => ({
   }),
 });
 
-/** Undispatched local events in commit order, for the local event dispatcher (M0-033). */
+/** Undispatched EDGE-plane events in commit order, for the local event dispatcher (M0-033). */
 export function pendingLocalDispatch(store: EdgeStore, limit = 100): LocalEvent[] {
-  return (store.db.prepare('select * from local_outbox where dispatched_at is null order by sequence limit ?').all(limit) as Row[]).map(toLocal);
+  return (store.db.prepare("select * from local_outbox where dispatched_at is null and plane = 'EDGE' order by sequence limit ?").all(limit) as Row[]).map(toLocal);
 }
 
 export function markLocallyDispatched(store: EdgeStore, sequence: number): void {
   store.db.prepare('update local_outbox set dispatched_at = ? where sequence = ? and dispatched_at is null').run(new Date().toISOString(), sequence);
 }
 
-/** EDGE_TO_CLOUD events not yet acknowledged by the Cloud inbox, in sequence order (Edge Sync). */
+/**
+ * Local events not yet acknowledged by the Cloud inbox, in sequence order (Edge Sync). Both planes
+ * sync: EDGE events are dispatched locally and also copied to the Cloud (§33); EDGE_TO_CLOUD are Cloud-only.
+ */
 export function pendingCloudSync(store: EdgeStore, limit = 100): LocalEvent[] {
-  return (store.db.prepare(`select * from local_outbox where synced_at is null and plane = 'EDGE_TO_CLOUD' order by sequence limit ?`).all(limit) as Row[]).map(toLocal);
+  return (store.db.prepare('select * from local_outbox where synced_at is null order by sequence limit ?').all(limit) as Row[]).map(toLocal);
 }
 
 /** Records the Cloud inbox acknowledgement up to and including `sequence`. */
 export function markSyncedThrough(store: EdgeStore, sequence: number): number {
-  return store.db.prepare(`update local_outbox set synced_at = ? where synced_at is null and plane = 'EDGE_TO_CLOUD' and sequence <= ?`).run(new Date().toISOString(), sequence).changes;
+  return store.db.prepare('update local_outbox set synced_at = ? where synced_at is null and sequence <= ?').run(new Date().toISOString(), sequence).changes;
 }

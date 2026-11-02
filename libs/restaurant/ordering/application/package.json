@@ -1,0 +1,26 @@
+{
+  "name": "@rifad/ordering-application",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:ordering",
+      "layer:application",
+      "runtime:shared"
+    ]
+  },
+  "dependencies": {
+    "@rifad/kernel": "workspace:*",
+    "@rifad/ordering-contract": "workspace:*",
+    "@rifad/ordering-domain": "workspace:*",
+    "@rifad/pricing-contract": "workspace:*"
+  }
+}

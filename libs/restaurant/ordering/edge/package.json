@@ -1,0 +1,27 @@
+{
+  "name": "@rifad/ordering-edge",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:ordering",
+      "layer:infrastructure",
+      "runtime:edge"
+    ]
+  },
+  "dependencies": {
+    "@rifad/edge-store": "workspace:*",
+    "@rifad/kernel": "workspace:*",
+    "@rifad/ordering-application": "workspace:*",
+    "@rifad/ordering-domain": "workspace:*",
+    "@rifad/request-context": "workspace:*"
+  }
+}
