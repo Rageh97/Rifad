@@ -12,6 +12,9 @@
   "references": [
     {
       "path": "../../libs/shared/runtime-config"
+    },
+    {
+      "path": "../../libs/shared/http-platform"
     }
   ]
 }

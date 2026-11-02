@@ -1,6 +1,6 @@
 packages:
   - apps/*
-  - libs/shared/runtime-config
+  - libs/shared/*
 engineStrict: true
 saveExact: true
 strictPeerDependencies: true

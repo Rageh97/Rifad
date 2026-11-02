@@ -1,0 +1,5 @@
+{
+  "name": "request-context", "sourceRoot": "libs/shared/request-context/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:infrastructure", "runtime:shared"],
+  "targets": { "build": { "command": "tsc -b libs/shared/request-context", "outputs": ["{projectRoot}/dist"] } }
+}

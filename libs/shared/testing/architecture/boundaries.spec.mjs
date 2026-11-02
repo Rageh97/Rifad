@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync, rmSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve, join, dirname, sep } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -12,10 +12,21 @@ const eslintBin=resolve(require.resolve('eslint/package.json'),'../bin/eslint.js
 const nxBin=resolve(require.resolve('nx/package.json'),'../dist/bin/nx.js');
 test('every real project is classified and composition roots do not import each other', () => {
   const projects=projectInventory();
-  assert.equal(projects.length,4);
+  assert.deepEqual(projects.map(p=>p.name).sort(),['api','edge','http-platform','kernel','request-context','runtime-config','worker']);
   for(const app of ['api','worker','edge']) {
     const source=readFileSync('apps/'+app+'/src/main.ts','utf8');
     assert.ok(!/from ['"].*(?:apps\/|postgres|bullmq|redis|sqlite)/i.test(source));
+  }
+});
+
+test('shared kernel is a pure domain library with relative imports only', () => {
+  const kernel=projectInventory().find(p=>p.name==='kernel');
+  assert.deepEqual([...kernel.tags].sort(),['layer:domain','runtime:shared','scope:shared']);
+  const sources=readdirSync('libs/shared/kernel/src').filter(file=>file.endsWith('.ts') && !file.endsWith('.spec.ts'));
+  assert.ok(sources.length>=6);
+  for(const file of sources) {
+    const source=readFileSync('libs/shared/kernel/src/'+file,'utf8');
+    for(const [,specifier] of source.matchAll(/(?:from|import)\s+['"]([^'"]+)['"]/g)) assert.ok(specifier.startsWith('./'),file+' imports '+specifier);
   }
 });
 

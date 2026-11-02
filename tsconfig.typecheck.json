@@ -1,5 +1,10 @@
 {
   "extends": "./tsconfig.base.json",
-  "compilerOptions": { "noEmit": true },
-  "include": ["apps/*/src/**/*.ts", "libs/shared/runtime-config/src/**/*.ts"]
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "apps/*/src/**/*.ts",
+    "libs/shared/*/src/**/*.ts"
+  ]
 }

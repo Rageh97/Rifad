@@ -1,4 +1,26 @@
 {
   "files": [],
-  "references": [{ "path": "libs/shared/runtime-config" }, { "path": "apps/api" }, { "path": "apps/worker" }, { "path": "apps/edge" }]
+  "references": [
+    {
+      "path": "libs/shared/runtime-config"
+    },
+    {
+      "path": "libs/shared/kernel"
+    },
+    {
+      "path": "libs/shared/request-context"
+    },
+    {
+      "path": "libs/shared/http-platform"
+    },
+    {
+      "path": "apps/api"
+    },
+    {
+      "path": "apps/worker"
+    },
+    {
+      "path": "apps/edge"
+    }
+  ]
 }

@@ -16,7 +16,9 @@ export function discoverUnitTests(root = process.cwd()) {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   try {
     const specs = discoverUnitTests();
-    const child = spawnSync(process.execPath, ['--import', 'tsx', '--test', ...specs], { stdio: 'inherit' });
+    // The root tsconfig only lists references; compiler options such as decorators live in the base config.
+    const env = { ...process.env, TSX_TSCONFIG_PATH: resolve('tsconfig.base.json') };
+    const child = spawnSync(process.execPath, ['--import', 'tsx', '--test', ...specs], { stdio: 'inherit', env });
     process.exitCode = child.status ?? 1;
   } catch (error) { console.error(error.message); process.exitCode = 1; }
 }

@@ -1,0 +1,5 @@
+{
+  "name": "kernel", "sourceRoot": "libs/shared/kernel/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:domain", "runtime:shared"],
+  "targets": { "build": { "command": "tsc -b libs/shared/kernel", "outputs": ["{projectRoot}/dist"] } }
+}

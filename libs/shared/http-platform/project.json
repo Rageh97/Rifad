@@ -1,0 +1,5 @@
+{
+  "name": "http-platform", "sourceRoot": "libs/shared/http-platform/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:infrastructure", "runtime:shared"],
+  "targets": { "build": { "command": "tsc -b libs/shared/http-platform", "outputs": ["{projectRoot}/dist"] } }
+}
