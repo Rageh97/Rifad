@@ -32,6 +32,9 @@
       "path": "libs/shared/outbox-relay"
     },
     {
+      "path": "libs/shared/event-consumer"
+    },
+    {
       "path": "libs/shared/test-containers"
     },
     {

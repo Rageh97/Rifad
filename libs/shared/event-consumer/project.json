@@ -1,0 +1,5 @@
+{
+  "name": "event-consumer", "sourceRoot": "libs/shared/event-consumer/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:infrastructure", "runtime:cloud"],
+  "targets": { "build": { "command": "tsc -b libs/shared/event-consumer", "outputs": ["{projectRoot}/dist"] } }
+}

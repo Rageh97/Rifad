@@ -129,6 +129,42 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
         ADD COLUMN trace_parent text CHECK (trace_parent ~ '^00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}$');
     `,
   },
+  {
+    id: '0006_events_consumer_state',
+    owner: 'events',
+    sql: `
+      -- Durable consumer state (M0-022/047): which events each consumer processed, and the last applied
+      -- position per ordering key, written in the same transaction as the consumer's effect.
+      CREATE TABLE events.consumer_processed (
+        organization_id uuid NOT NULL,
+        consumer text NOT NULL CHECK (consumer ~ '^[a-z][a-z0-9_.-]{0,63}$'),
+        event_id uuid NOT NULL,
+        processed_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (organization_id, consumer, event_id)
+      );
+      CREATE TABLE events.consumer_position (
+        organization_id uuid NOT NULL,
+        consumer text NOT NULL CHECK (consumer ~ '^[a-z][a-z0-9_.-]{0,63}$'),
+        ordering_key text NOT NULL,
+        position bigint NOT NULL CHECK (position > 0),
+        updated_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (organization_id, consumer, ordering_key)
+      );
+      ALTER TABLE events.consumer_processed ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE events.consumer_processed FORCE ROW LEVEL SECURITY;
+      ALTER TABLE events.consumer_position ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE events.consumer_position FORCE ROW LEVEL SECURITY;
+      CREATE POLICY consumer_processed_tenant ON events.consumer_processed
+        USING (organization_id = rifad.current_organization_id())
+        WITH CHECK (organization_id = rifad.current_organization_id());
+      CREATE POLICY consumer_position_tenant ON events.consumer_position
+        USING (organization_id = rifad.current_organization_id())
+        WITH CHECK (organization_id = rifad.current_organization_id());
+      GRANT SELECT, INSERT ON events.consumer_processed TO ${RUNTIME_ROLE};
+      GRANT SELECT, INSERT ON events.consumer_position TO ${RUNTIME_ROLE};
+      GRANT UPDATE (position, updated_at) ON events.consumer_position TO ${RUNTIME_ROLE};
+    `,
+  },
 ]);
 
 export class MigrationError extends Error {

@@ -82,6 +82,9 @@ importers:
       '@rifad/logging':
         specifier: workspace:*
         version: link:../../libs/shared/logging
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../../libs/shared/observability
       '@rifad/runtime-config':
         specifier: workspace:*
         version: link:../../libs/shared/runtime-config
@@ -109,6 +112,9 @@ importers:
       '@rifad/logging':
         specifier: workspace:*
         version: link:../../libs/shared/logging
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../../libs/shared/observability
       '@rifad/runtime-config':
         specifier: workspace:*
         version: link:../../libs/shared/runtime-config
@@ -139,6 +145,9 @@ importers:
       '@rifad/logging':
         specifier: workspace:*
         version: link:../../libs/shared/logging
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../../libs/shared/observability
       '@rifad/outbox-relay':
         specifier: workspace:*
         version: link:../../libs/shared/outbox-relay
@@ -166,6 +175,9 @@ importers:
       '@rifad/events':
         specifier: workspace:*
         version: link:../events
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../observability
       kysely:
         specifier: 0.29.7
         version: 0.29.7
@@ -179,6 +191,27 @@ importers:
       '@types/pg':
         specifier: 8.23.1
         version: 8.23.1
+
+  libs/shared/event-consumer:
+    dependencies:
+      '@rifad/database':
+        specifier: workspace:*
+        version: link:../database
+      '@rifad/events':
+        specifier: workspace:*
+        version: link:../events
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../observability
+      '@rifad/queue':
+        specifier: workspace:*
+        version: link:../queue
+      bullmq:
+        specifier: 6.3.17
+        version: 6.3.17(ioredis@6.0.0(supports-color@10.2.2))(pg@8.23.1)
+      kysely:
+        specifier: 0.29.7
+        version: 0.29.7
 
   libs/shared/events: {}
 
@@ -199,6 +232,9 @@ importers:
       '@rifad/logging':
         specifier: workspace:*
         version: link:../logging
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../observability
       '@rifad/request-context':
         specifier: workspace:*
         version: link:../request-context
@@ -216,6 +252,9 @@ importers:
 
   libs/shared/logging:
     dependencies:
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../observability
       '@rifad/request-context':
         specifier: workspace:*
         version: link:../request-context
@@ -249,6 +288,9 @@ importers:
       '@rifad/events':
         specifier: workspace:*
         version: link:../events
+      '@rifad/observability':
+        specifier: workspace:*
+        version: link:../observability
       '@rifad/queue':
         specifier: workspace:*
         version: link:../queue
