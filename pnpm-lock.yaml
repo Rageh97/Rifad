@@ -206,6 +206,9 @@ importers:
       '@rifad/queue':
         specifier: workspace:*
         version: link:../queue
+      '@rifad/request-context':
+        specifier: workspace:*
+        version: link:../request-context
       bullmq:
         specifier: 6.3.17
         version: 6.3.17(ioredis@6.0.0(supports-color@10.2.2))(pg@8.23.1)

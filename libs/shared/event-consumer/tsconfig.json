@@ -24,6 +24,9 @@
     },
     {
       "path": "../queue"
+    },
+    {
+      "path": "../request-context"
     }
   ]
 }

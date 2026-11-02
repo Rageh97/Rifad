@@ -76,3 +76,8 @@ export function requireContext(): RequestContext {
   if (!context) throw new RequestContextError('missing');
   return context;
 }
+
+/** Correlation ID to stamp on a new event: the active request's, or a fresh one outside any request. */
+export function currentCorrelationId(): string {
+  return storage.getStore()?.correlationId ?? createRequestContext().correlationId;
+}
