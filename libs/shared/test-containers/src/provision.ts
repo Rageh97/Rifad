@@ -19,7 +19,8 @@ const loopback = new Set(['127.0.0.1', 'localhost', '[::1]']);
 export async function provisionLocalDatabase(input: LocalProvisioning): Promise<void> {
   if (!loopback.has(new URL(input.adminUrl).hostname)) throw new Error('LOCAL_PROVISIONING_ONLY');
   if (!/^[a-z_][a-z0-9_]{0,62}$/.test(input.database)) throw new Error('INVALID_DATABASE_NAME');
-  const admin = new Client({ connectionString: input.adminUrl });
+  const admin = new Client({ connectionString: input.adminUrl, connectionTimeoutMillis: 5_000,
+    query_timeout: 5_000, statement_timeout: 5_000 });
   await admin.connect();
   try {
     const createRole = async (role: string, attributes: string, password: string) => {
@@ -37,7 +38,8 @@ export async function provisionLocalDatabase(input: LocalProvisioning): Promise<
   }
   const target = new URL(input.adminUrl);
   target.pathname = '/' + input.database;
-  const database = new Client({ connectionString: target.toString() });
+  const database = new Client({ connectionString: target.toString(), connectionTimeoutMillis: 5_000,
+    query_timeout: 5_000, statement_timeout: 5_000 });
   await database.connect();
   try {
     await database.query('REVOKE ALL ON SCHEMA public FROM PUBLIC');

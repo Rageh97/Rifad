@@ -44,7 +44,9 @@ async function pgError(promise: Promise<unknown>): Promise<string> {
 }
 
 before(async () => {
-  [postgres, redis] = await Promise.all([startPostgres(), startRedis()]);
+  // Start one Docker CLI process at a time to keep setup bounded on memory-constrained hosts.
+  postgres = await startPostgres();
+  redis = await startRedis();
   owner = createDatabase(postgres.ownerUrl, { applicationName: 'relay-it-owner', maxConnections: 2 });
   await migrate(owner.db);
   // The owner sees every row only for assertions: FORCE RLS applies to it too, so it reads via a policy-free path.

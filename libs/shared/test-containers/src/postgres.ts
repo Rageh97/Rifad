@@ -27,11 +27,16 @@ export async function startPostgres(): Promise<PostgresServer> {
     const port = await mappedPort(container, '5432/tcp');
     const adminUrl = `postgres://postgres:${adminPassword}@127.0.0.1:${port}/postgres`;
     await waitFor(async () => {
-      const client = new Client({ connectionString: adminUrl, connectionTimeoutMillis: 2_000 });
+      const client = new Client({ connectionString: adminUrl, connectionTimeoutMillis: 2_000,
+        query_timeout: 2_000, statement_timeout: 2_000 });
       try { await client.connect(); await client.query('select 1'); } finally { await client.end().catch(() => undefined); }
     }, 60_000, 'POSTGRES_START_TIMEOUT');
     const passwords = { owner: secret(), app: secret(), relay: secret() };
-    await provisionLocalDatabase({ adminUrl, database: 'rifad', passwords });
+    try {
+      await provisionLocalDatabase({ adminUrl, database: 'rifad', passwords });
+    } catch (error) {
+      throw new Error('POSTGRES_PROVISION_FAILED', { cause: error });
+    }
     const url = (role: string, password: string) => `postgres://${role}:${password}@127.0.0.1:${port}/rifad`;
     return Object.freeze({
       adminUrl: url('postgres', adminPassword), ownerUrl: url(ROLES.owner, passwords.owner),

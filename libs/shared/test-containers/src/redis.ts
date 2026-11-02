@@ -19,9 +19,14 @@ function ping(port: number, password: string): Promise<void> {
   return new Promise((resolve, reject) => {
     const socket = createConnection({ host: '127.0.0.1', port }, () => socket.write(`AUTH ${password}\r\nPING\r\n`));
     let data = '';
-    socket.setTimeout(2_000, () => { socket.destroy(); reject(new Error('timeout')); });
-    socket.on('data', chunk => { data += chunk; if (data.includes('+PONG')) { socket.end(); resolve(); } else if (data.includes('-')) { socket.destroy(); reject(new Error('not ready')); } });
-    socket.on('error', reject);
+    const deadline = setTimeout(() => { socket.destroy(); reject(new Error('timeout')); }, 2_000);
+    socket.on('data', chunk => {
+      data += chunk;
+      if (data.includes('+PONG')) { clearTimeout(deadline); socket.end(); resolve(); }
+      else if (data.includes('-')) { clearTimeout(deadline); socket.destroy(); reject(new Error('not ready')); }
+    });
+    socket.on('error', error => { clearTimeout(deadline); reject(error); });
+    socket.on('close', () => { clearTimeout(deadline); reject(new Error('closed')); });
   });
 }
 
@@ -31,20 +36,21 @@ function ping(port: number, password: string): Promise<void> {
  */
 export async function startRedis(options: { misconfigured?: boolean } = {}): Promise<RedisServer> {
   const password = secret();
+  const name = `rifad-it-redis-${secret()}`;
   const policy = options.misconfigured ? 'allkeys-lru' : 'noeviction';
   // A fixed host port keeps the same URL across restarts, so clients can reconnect.
   const port = await new Promise<number>((resolve, reject) => { const probe = createServer().once('error', reject).listen(0, '127.0.0.1', () => { const value = (probe.address() as { port: number }).port; probe.close(() => resolve(value)); }); });
-  const container = await docker(['run', '-d', '--label', 'rifad.test=integration', '-p', `127.0.0.1:${port}:6379`, REDIS_IMAGE,
-    'redis-server', '--requirepass', password, '--maxmemory-policy', policy, '--appendonly', 'yes', '--appendfsync', 'always', '--save', ''], 300_000);
-  const stop = async () => { await docker(['rm', '-f', container]).catch(() => undefined); };
+  const stop = async () => { await docker(['rm', '-f', name], 10_000).catch(() => undefined); };
   try {
+    await docker(['run', '-d', '--name', name, '--label', 'rifad.test=integration', '-p', `127.0.0.1:${port}:6379`, REDIS_IMAGE,
+      'redis-server', '--requirepass', password, '--maxmemory-policy', policy, '--appendonly', 'yes', '--appendfsync', 'always', '--save', ''], 300_000);
     await waitFor(() => ping(port, password), 30_000, 'REDIS_START_TIMEOUT');
     const server = {
       url: `redis://:${password}@127.0.0.1:${port}`,
       port,
-      async down() { await docker(['stop', '-t', '5', container]); },
+      async down() { await docker(['stop', '-t', '5', name]); },
       async up() {
-        await docker(['start', container]);
+        await docker(['start', name]);
         await waitFor(() => ping(port, password), 30_000, 'REDIS_START_TIMEOUT');
       },
       stop,

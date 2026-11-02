@@ -7,11 +7,22 @@ const run = promisify(execFile);
 export const secret = () => randomBytes(18).toString('hex');
 
 export async function docker(args: string[], timeout = 120_000): Promise<string> {
+  let deadline: ReturnType<typeof setTimeout> | undefined;
   try {
-    return (await run('docker', args, { timeout, windowsHide: true, maxBuffer: 1024 * 1024 })).stdout.trim();
+    const command = run('docker', args, { timeout, windowsHide: true, maxBuffer: 1024 * 1024 });
+    const result = await Promise.race([
+      command,
+      new Promise<never>((_resolve, reject) => {
+        deadline = setTimeout(() => reject(new Error('DOCKER_COMMAND_TIMEOUT')), timeout);
+      }),
+    ]);
+    return result.stdout.trim();
   } catch (error) {
-    const reason = (error as { code?: unknown }).code === 'ENOENT' ? 'DOCKER_CLI_MISSING' : 'DOCKER_COMMAND_FAILED';
+    const reason = (error as Error).message === 'DOCKER_COMMAND_TIMEOUT' ? 'DOCKER_COMMAND_TIMEOUT'
+      : (error as { code?: unknown }).code === 'ENOENT' ? 'DOCKER_CLI_MISSING' : 'DOCKER_COMMAND_FAILED';
     throw new Error(`${reason}: docker ${args[0]} (integration tests require a running Docker engine)`);
+  } finally {
+    if (deadline) clearTimeout(deadline);
   }
 }
 
