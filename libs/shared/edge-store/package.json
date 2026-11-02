@@ -1,0 +1,27 @@
+{
+  "name": "@rifad/edge-store",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "layer:infrastructure",
+      "runtime:edge"
+    ]
+  },
+  "dependencies": {
+    "@rifad/events": "workspace:*",
+    "better-sqlite3-multiple-ciphers": "12.11.1"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "9.6.0"
+  }
+}

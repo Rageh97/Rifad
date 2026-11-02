@@ -92,6 +92,9 @@
       "path": "libs/shared/access"
     },
     {
+      "path": "libs/shared/edge-store"
+    },
+    {
       "path": "apps/api"
     },
     {

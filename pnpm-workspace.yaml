@@ -22,3 +22,5 @@ allowBuilds:
   nx: true
   esbuild: true
   msgpackr-extract: false
+  # Native SQLCipher build for the Edge store (decision E02, 2026-11-02).
+  better-sqlite3-multiple-ciphers: true
