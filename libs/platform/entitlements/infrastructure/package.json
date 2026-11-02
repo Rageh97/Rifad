@@ -1,0 +1,27 @@
+{
+  "name": "@rifad/entitlements-infrastructure",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:entitlements",
+      "layer:infrastructure",
+      "runtime:cloud"
+    ]
+  },
+  "dependencies": {
+    "@rifad/database": "workspace:*",
+    "@rifad/entitlements-application": "workspace:*",
+    "@rifad/entitlements-contract": "workspace:*",
+    "@rifad/entitlements-domain": "workspace:*",
+    "kysely": "0.29.7"
+  }
+}

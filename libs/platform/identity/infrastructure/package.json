@@ -1,0 +1,26 @@
+{
+  "name": "@rifad/identity-infrastructure",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:identity",
+      "layer:infrastructure",
+      "runtime:cloud"
+    ]
+  },
+  "dependencies": {
+    "@rifad/database": "workspace:*",
+    "@rifad/identity-contract": "workspace:*",
+    "jose": "6.2.12",
+    "kysely": "0.29.7"
+  }
+}

@@ -27,3 +27,6 @@ Add a row per context when its first slice is authorized.
 | Context | Owner | Milestone | Projects (domain / application / infrastructure / api) | Tables owned | Events produced | Public contract |
 | --- | --- | --- | --- | --- | --- | --- |
 | Organizations | Platform (G10: owns Membership) | M0 | organizations-domain / -application / -infrastructure (cloud) | organizations.organization, .branch, .membership | none yet | organizations-contract (`OrganizationDirectory`) |
+| Identity | Platform | M0 | identity-contract / -infrastructure (cloud) | identity.external_identity (platform-level) | none | identity-contract (`TokenVerifier`, `UserDirectory`, `authenticate`) |
+| Authorization | Platform | M0 | authorization-domain / -application / -infrastructure (cloud) | authorization_ctx.role, .role_assignment | none | authorization-contract (`AuthorizationQuery`, `PERMISSIONS`) |
+| Entitlements | Platform | M0 | entitlements-domain / -application / -infrastructure (cloud) | entitlements.organization_feature | none | entitlements-contract (`EntitlementQuery`, `featureForPermission`) |

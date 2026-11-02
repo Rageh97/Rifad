@@ -13,7 +13,10 @@ if (!url || !['postgres:', 'postgresql:'].includes(url.protocol) || !['127.0.0.1
 const { createDatabase, migrate, MIGRATIONS } = require('../libs/shared/database/dist/index.js');
 // Every context's migrations run through one migrator in global ID order (platform first).
 const { ORGANIZATIONS_MIGRATIONS } = require('../libs/platform/organizations/infrastructure/dist/index.js');
-const migrations = [...MIGRATIONS, ...ORGANIZATIONS_MIGRATIONS];
+const { IDENTITY_MIGRATIONS } = require('../libs/platform/identity/infrastructure/dist/index.js');
+const { AUTHORIZATION_MIGRATIONS } = require('../libs/platform/authorization/infrastructure/dist/index.js');
+const { ENTITLEMENTS_MIGRATIONS } = require('../libs/platform/entitlements/infrastructure/dist/index.js');
+const migrations = [...MIGRATIONS, ...ORGANIZATIONS_MIGRATIONS, ...IDENTITY_MIGRATIONS, ...AUTHORIZATION_MIGRATIONS, ...ENTITLEMENTS_MIGRATIONS];
 const database = createDatabase(value, { applicationName: 'rifad-migrate', maxConnections: 1 });
 try {
   const applied = await migrate(database.db, migrations);

@@ -1,0 +1,18 @@
+{
+  "name": "entitlements-application",
+  "sourceRoot": "libs/platform/entitlements/application/src",
+  "projectType": "library",
+  "tags": [
+    "scope:entitlements",
+    "layer:application",
+    "runtime:shared"
+  ],
+  "targets": {
+    "build": {
+      "command": "tsc -b libs/platform/entitlements/application",
+      "outputs": [
+        "{projectRoot}/dist"
+      ]
+    }
+  }
+}

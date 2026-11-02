@@ -53,6 +53,36 @@
       "path": "libs/platform/organizations/infrastructure"
     },
     {
+      "path": "libs/platform/identity/contract"
+    },
+    {
+      "path": "libs/platform/identity/infrastructure"
+    },
+    {
+      "path": "libs/platform/authorization/contract"
+    },
+    {
+      "path": "libs/platform/authorization/domain"
+    },
+    {
+      "path": "libs/platform/authorization/application"
+    },
+    {
+      "path": "libs/platform/authorization/infrastructure"
+    },
+    {
+      "path": "libs/platform/entitlements/contract"
+    },
+    {
+      "path": "libs/platform/entitlements/domain"
+    },
+    {
+      "path": "libs/platform/entitlements/application"
+    },
+    {
+      "path": "libs/platform/entitlements/infrastructure"
+    },
+    {
       "path": "apps/api"
     },
     {

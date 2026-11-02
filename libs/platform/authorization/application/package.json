@@ -1,0 +1,26 @@
+{
+  "name": "@rifad/authorization-application",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:authorization",
+      "layer:application",
+      "runtime:shared"
+    ]
+  },
+  "dependencies": {
+    "@rifad/authorization-contract": "workspace:*",
+    "@rifad/authorization-domain": "workspace:*",
+    "@rifad/kernel": "workspace:*",
+    "@rifad/organizations-contract": "workspace:*"
+  }
+}
