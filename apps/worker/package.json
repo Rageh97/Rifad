@@ -10,6 +10,8 @@
     "@rifad/database": "workspace:*",
     "@rifad/http-platform": "workspace:*",
     "@rifad/logging": "workspace:*",
+    "@rifad/outbox-relay": "workspace:*",
+    "@rifad/queue": "workspace:*",
     "@rifad/runtime-config": "workspace:*",
     "reflect-metadata": "0.2.2",
     "rxjs": "7.8.2"

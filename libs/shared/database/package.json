@@ -1,14 +1,29 @@
 {
-  "name": "@rifad/database", "version": "0.0.0", "private": true,
-  "main": "./dist/index.js", "types": "./dist/index.d.ts",
-  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
-  "nx": { "tags": ["scope:shared", "layer:infrastructure", "runtime:cloud"] },
+  "name": "@rifad/database",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:shared",
+      "layer:infrastructure",
+      "runtime:cloud"
+    ]
+  },
   "dependencies": {
     "@rifad/events": "workspace:*",
     "kysely": "0.29.7",
     "pg": "8.23.1"
   },
   "devDependencies": {
-    "@types/pg": "8.23.1"
+    "@types/pg": "8.23.1",
+    "@rifad/test-containers": "workspace:*"
   }
 }

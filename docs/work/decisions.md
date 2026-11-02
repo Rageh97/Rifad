@@ -33,7 +33,7 @@ G05 must resolve actual source-fact capability placement before claiming M1A COG
 | --- | --- | --- |
 | E01 | Real PostgreSQL/Redis for integration tests: Docker Desktop locally plus a Linux CI integration job | DIRECTION APPROVED (user chat, 2026-11-01). Local Docker engine started by the user on 2026-11-02 and used by B005. The Linux `integration` CI job exists locally but has not run on GitHub. Adding it as a third required branch-protection check needs separate explicit approval after it passes. |
 | E02 | Edge SQLite driver (`node:sqlite` versus `better-sqlite3`) and its encryption path | OPEN; encryption depends on G08. Blocks Edge parts of M0-019/028. |
-| E03 | Re-verify PostgreSQL 18.x, Redis 8.x, Kysely and driver patch/security releases at B005 start (§21 version note) | PostgreSQL/Kysely/pg DONE 2026-11-02 in [B005](batches/B005.md) (18.6 by digest, Kysely 0.29.7, pg 8.23.1). Redis 8.x pending until B006. |
+| E03 | Re-verify PostgreSQL 18.x, Redis 8.x, Kysely and driver patch/security releases at B005 start (§21 version note) | PostgreSQL/Kysely/pg DONE 2026-11-02 in [B005](batches/B005.md) (18.6 by digest, Kysely 0.29.7, pg 8.23.1). Redis 8.10.3 (digest), BullMQ 6.3.17 and ioredis 6.0.0 DONE 2026-11-02 in [B006](batches/B006.md). |
 
 ## Delivery capacity input (G11 / M-1-018)
 

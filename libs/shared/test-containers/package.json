@@ -1,0 +1,12 @@
+{
+  "name": "@rifad/test-containers", "version": "0.0.0", "private": true,
+  "main": "./dist/index.js", "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "nx": { "tags": ["scope:shared", "layer:testing", "runtime:ci"] },
+  "dependencies": {
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/pg": "8.23.1"
+  }
+}

@@ -44,6 +44,8 @@ export async function checkDatabase<DB>(db: Kysely<DB>, timeoutMs = 2_000): Prom
   let timer: NodeJS.Timeout | undefined;
   try {
     const probe = sql<{ ok: number }>`select 1 as ok`.execute(db).then(result => result.rows[0]?.ok === 1);
+    // A probe that settles after the deadline must not become an unhandled rejection.
+    probe.catch(() => undefined);
     const deadline = new Promise<false>(resolve => { timer = setTimeout(() => resolve(false), timeoutMs); });
     return (await Promise.race([probe, deadline])) ? 'ready' : 'unavailable';
   } catch {

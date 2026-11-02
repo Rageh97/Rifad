@@ -1,8 +1,12 @@
 import { createHash } from 'node:crypto';
 import { sql, type Kysely } from 'kysely';
 
+/** Owner/migration role: owns schemas and tables, runs migrations, never serves requests (§14.1). */
+export const OWNER_ROLE = 'rifad_owner';
 /** Runtime role granted DML by migrations; it never owns tables and has no BYPASSRLS (§14.1, ADR-043). */
 export const RUNTIME_ROLE = 'rifad_app';
+/** Scoped service role for the Cloud outbox relay: reads/updates publish state on the outbox only (§14.1). */
+export const RELAY_ROLE = 'rifad_relay';
 
 export interface Migration {
   readonly id: string;
@@ -69,6 +73,51 @@ export const MIGRATIONS: readonly Migration[] = Object.freeze([
         WITH CHECK (organization_id = rifad.current_organization_id());
       -- Appending only; publishing state changes belong to the relay worker (M0-021).
       GRANT SELECT, INSERT ON events.outbox TO ${RUNTIME_ROLE};
+    `,
+  },
+  {
+    id: '0003_events_outbox_relay',
+    owner: 'events',
+    sql: `
+      ALTER TABLE events.outbox
+        ADD COLUMN published_at timestamptz,
+        ADD COLUMN last_error text CHECK (last_error ~ '^[A-Z][A-Z0-9_]{0,63}$');
+      -- Scoped service role (§14.1): sees every tenant's outbox rows only to publish them, may change
+      -- only publish-state columns, and has no access to any other table, INSERT or DELETE.
+      GRANT USAGE ON SCHEMA events, rifad TO ${RELAY_ROLE};
+      GRANT EXECUTE ON FUNCTION rifad.current_organization_id() TO ${RELAY_ROLE};
+      GRANT SELECT ON events.outbox TO ${RELAY_ROLE};
+      GRANT UPDATE (status, attempts, available_at, published_at, last_error) ON events.outbox TO ${RELAY_ROLE};
+      CREATE POLICY outbox_relay_read ON events.outbox FOR SELECT TO ${RELAY_ROLE} USING (true);
+      CREATE POLICY outbox_relay_publish ON events.outbox FOR UPDATE TO ${RELAY_ROLE} USING (true) WITH CHECK (true);
+    `,
+  },
+  {
+    id: '0004_sync_inbox',
+    owner: 'sync',
+    sql: `
+      CREATE SCHEMA sync;
+      REVOKE ALL ON SCHEMA sync FROM PUBLIC;
+      GRANT USAGE ON SCHEMA sync TO ${RUNTIME_ROLE};
+      -- Edge -> Cloud operation inbox (M0-022): one row per accepted operation; the payload stays in the
+      -- owning context's projection, only its hash is kept to detect conflicting replays.
+      CREATE TABLE sync.inbox (
+        organization_id uuid NOT NULL,
+        source_id uuid NOT NULL,
+        operation_id uuid NOT NULL,
+        source_sequence bigint NOT NULL CHECK (source_sequence > 0),
+        operation_type text NOT NULL,
+        payload_hash text NOT NULL CHECK (payload_hash ~ '^[0-9a-f]{64}$'),
+        received_at timestamptz NOT NULL DEFAULT now(),
+        PRIMARY KEY (organization_id, operation_id),
+        CONSTRAINT inbox_source_sequence UNIQUE (organization_id, source_id, source_sequence)
+      );
+      ALTER TABLE sync.inbox ENABLE ROW LEVEL SECURITY;
+      ALTER TABLE sync.inbox FORCE ROW LEVEL SECURITY;
+      CREATE POLICY inbox_tenant_isolation ON sync.inbox
+        USING (organization_id = rifad.current_organization_id())
+        WITH CHECK (organization_id = rifad.current_organization_id());
+      GRANT SELECT, INSERT ON sync.inbox TO ${RUNTIME_ROLE};
     `,
   },
 ]);

@@ -1,0 +1,5 @@
+{
+  "name": "outbox-relay", "sourceRoot": "libs/shared/outbox-relay/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:infrastructure", "runtime:cloud"],
+  "targets": { "build": { "command": "tsc -b libs/shared/outbox-relay", "outputs": ["{projectRoot}/dist"] } }
+}
