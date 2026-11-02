@@ -11,6 +11,12 @@
       "path": "libs/shared/request-context"
     },
     {
+      "path": "libs/shared/logging"
+    },
+    {
+      "path": "libs/shared/data-classification"
+    },
+    {
       "path": "libs/shared/http-platform"
     },
     {

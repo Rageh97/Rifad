@@ -1,6 +1,7 @@
 import { Catch, type ArgumentsHost, type ExceptionFilter } from '@nestjs/common';
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { Logger } from '@rifad/logging';
 import { CORRELATION_HEADER, REQUEST_ID_HEADER, contextFromHeaders, currentContext, runWithContext, type RequestContext } from '@rifad/request-context';
 import { toApiError } from './api-error';
 
@@ -23,7 +24,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
  * before `listen`/`init`. Context is entered on request and re-entered before the handler, because
  * body parsing may continue outside the original async scope.
  */
-export function configureHttpPlatform(app: NestFastifyApplication): void {
+export function configureHttpPlatform(app: NestFastifyApplication, logger: Logger): void {
   const fastify = app.getHttpAdapter().getInstance();
   fastify.addHook('onRequest', (request, reply, done) => {
     const context = contextFromHeaders(request.headers);
@@ -34,6 +35,14 @@ export function configureHttpPlatform(app: NestFastifyApplication): void {
   fastify.addHook('preHandler', (request, _reply, done) => {
     const context = contexts.get(request);
     if (context) runWithContext(context, done); else done();
+  });
+  // One completion line per request; the query string is dropped because it may carry personal data.
+  fastify.addHook('onResponse', (request, reply, done) => {
+    const fields = { method: request.method, path: request.url.split('?')[0], statusCode: reply.statusCode, durationMs: Math.round(reply.elapsedTime) };
+    const context = contexts.get(request);
+    const log = () => logger.info('http.request.completed', fields);
+    if (context) runWithContext(context, log); else log();
+    done();
   });
   app.useGlobalFilters(new ApiExceptionFilter());
 }

@@ -5,7 +5,7 @@
 - Completed foundation batch: [B001](batches/B001.md)
 - Completed engineering pipeline batch: [B002E](batches/B002E.md)
 - Authorized planning batch: [B003P](batches/B003P.md)
-- Authorized foundation batch: [B004](batches/B004.md)
+- Authorized foundation batches: [B004](batches/B004.md), [B004b](batches/B004b.md)
 - Unresolved decisions: [register](decisions.md) and [worksheet](decision-worksheet.md)
 
 This index grants no authorization and duplicates no task status. B002E uses the approved practical Windows local-development threat model; no Product Batch has been authorized.

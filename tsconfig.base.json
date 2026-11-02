@@ -8,7 +8,9 @@
       "@rifad/runtime-config": ["libs/shared/runtime-config/src/index.ts"],
       "@rifad/kernel": ["libs/shared/kernel/src/index.ts"],
       "@rifad/request-context": ["libs/shared/request-context/src/index.ts"],
-      "@rifad/http-platform": ["libs/shared/http-platform/src/index.ts"]
+      "@rifad/http-platform": ["libs/shared/http-platform/src/index.ts"],
+      "@rifad/logging": ["libs/shared/logging/src/index.ts"],
+      "@rifad/data-classification": ["libs/shared/data-classification/src/index.ts"]
     }
   }
 }

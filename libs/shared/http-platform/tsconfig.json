@@ -18,6 +18,9 @@
     },
     {
       "path": "../request-context"
+    },
+    {
+      "path": "../logging"
     }
   ]
 }

@@ -1,0 +1,5 @@
+{
+  "name": "logging", "sourceRoot": "libs/shared/logging/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:infrastructure", "runtime:shared"],
+  "targets": { "build": { "command": "tsc -b libs/shared/logging", "outputs": ["{projectRoot}/dist"] } }
+}
