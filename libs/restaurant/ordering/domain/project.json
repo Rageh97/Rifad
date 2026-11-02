@@ -1,0 +1,18 @@
+{
+  "name": "ordering-domain",
+  "sourceRoot": "libs/restaurant/ordering/domain/src",
+  "projectType": "library",
+  "tags": [
+    "scope:ordering",
+    "layer:domain",
+    "runtime:shared"
+  ],
+  "targets": {
+    "build": {
+      "command": "tsc -b libs/restaurant/ordering/domain",
+      "outputs": [
+        "{projectRoot}/dist"
+      ]
+    }
+  }
+}

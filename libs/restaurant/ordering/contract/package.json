@@ -1,0 +1,23 @@
+{
+  "name": "@rifad/ordering-contract",
+  "version": "0.0.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "nx": {
+    "tags": [
+      "scope:ordering",
+      "layer:contract",
+      "runtime:shared"
+    ]
+  },
+  "dependencies": {
+    "@rifad/pricing-contract": "workspace:*"
+  }
+}

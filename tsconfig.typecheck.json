@@ -6,6 +6,8 @@
   "include": [
     "apps/*/src/**/*.ts",
     "libs/shared/*/src/**/*.ts",
-    "libs/platform/*/*/src/**/*.ts"
+    "libs/platform/*/*/src/**/*.ts",
+    "libs/commerce/*/*/src/**/*.ts",
+    "libs/restaurant/*/*/src/**/*.ts"
   ]
 }

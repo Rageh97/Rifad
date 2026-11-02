@@ -2,6 +2,8 @@ packages:
   - apps/*
   - libs/shared/*
   - libs/platform/*/*
+  - libs/commerce/*/*
+  - libs/restaurant/*/*
 engineStrict: true
 saveExact: true
 strictPeerDependencies: true

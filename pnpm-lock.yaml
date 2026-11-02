@@ -185,6 +185,8 @@ importers:
         specifier: 7.8.2
         version: 7.8.2
 
+  libs/commerce/pricing/contract: {}
+
   libs/platform/audit/contract: {}
 
   libs/platform/audit/infrastructure:
@@ -356,6 +358,24 @@ importers:
       kysely:
         specifier: 0.29.7
         version: 0.29.7
+
+  libs/restaurant/ordering/contract:
+    dependencies:
+      '@rifad/pricing-contract':
+        specifier: workspace:*
+        version: link:../../../commerce/pricing/contract
+
+  libs/restaurant/ordering/domain:
+    dependencies:
+      '@rifad/kernel':
+        specifier: workspace:*
+        version: link:../../../shared/kernel
+      '@rifad/ordering-contract':
+        specifier: workspace:*
+        version: link:../contract
+      '@rifad/pricing-contract':
+        specifier: workspace:*
+        version: link:../../../commerce/pricing/contract
 
   libs/shared/access:
     dependencies:

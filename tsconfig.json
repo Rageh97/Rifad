@@ -95,6 +95,15 @@
       "path": "libs/shared/edge-store"
     },
     {
+      "path": "libs/commerce/pricing/contract"
+    },
+    {
+      "path": "libs/restaurant/ordering/contract"
+    },
+    {
+      "path": "libs/restaurant/ordering/domain"
+    },
+    {
       "path": "apps/api"
     },
     {
