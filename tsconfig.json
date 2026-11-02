@@ -23,6 +23,15 @@
       "path": "libs/shared/database"
     },
     {
+      "path": "libs/shared/queue"
+    },
+    {
+      "path": "libs/shared/outbox-relay"
+    },
+    {
+      "path": "libs/shared/test-containers"
+    },
+    {
       "path": "libs/shared/http-platform"
     },
     {

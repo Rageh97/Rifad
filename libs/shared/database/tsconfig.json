@@ -1,6 +1,20 @@
 {
   "extends": "../../../tsconfig.base.json",
-  "compilerOptions": { "rootDir": "src", "outDir": "dist", "composite": true, "declaration": true },
-  "include": ["src/**/*.ts"], "exclude": ["src/**/*.spec.ts", "src/test-support/**"],
-  "references": [{ "path": "../events" }]
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "composite": true,
+    "declaration": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "src/**/*.spec.ts"
+  ],
+  "references": [
+    {
+      "path": "../events"
+    }
+  ]
 }

@@ -12,9 +12,12 @@ const eslintBin=resolve(require.resolve('eslint/package.json'),'../bin/eslint.js
 const nxBin=resolve(require.resolve('nx/package.json'),'../dist/bin/nx.js');
 test('every real project is classified and composition roots do not import each other', () => {
   const projects=projectInventory();
-  assert.deepEqual(projects.map(p=>p.name).sort(),['api','data-classification','database','edge','events','http-platform','kernel','logging','request-context','runtime-config','worker']);
+  assert.deepEqual(projects.map(p=>p.name).sort(),['api','data-classification','database','edge','events','http-platform','kernel','logging','outbox-relay','queue','request-context','runtime-config','test-containers','worker']);
   // Postgres infrastructure is Cloud-only; Edge must never be able to depend on it (ADR-029/037).
-  assert.ok(projects.find(p=>p.name==='database').tags.includes('runtime:cloud'));
+  for(const name of ['database','queue','outbox-relay']) assert.ok(projects.find(p=>p.name===name).tags.includes('runtime:cloud'),name);
+  assert.ok(projects.find(p=>p.name==='test-containers').tags.includes('runtime:ci'));
+  // Production code never depends on container test support; only *.integration.spec.ts files may import it.
+  for(const name of ['database','queue','outbox-relay']) assert.ok(!JSON.stringify(JSON.parse(readFileSync('libs/shared/'+name+'/package.json','utf8')).dependencies??{}).includes('@rifad/test-containers'),name);
   assert.ok(!JSON.stringify(JSON.parse(readFileSync('apps/edge/package.json','utf8')).dependencies).includes('@rifad/database'));
   for(const app of ['api','worker','edge']) {
     const source=readFileSync('apps/'+app+'/src/main.ts','utf8');

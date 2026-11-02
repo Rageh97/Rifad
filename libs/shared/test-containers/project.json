@@ -1,0 +1,5 @@
+{
+  "name": "test-containers", "sourceRoot": "libs/shared/test-containers/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:testing", "runtime:ci"],
+  "targets": { "build": { "command": "tsc -b libs/shared/test-containers", "outputs": ["{projectRoot}/dist"] } }
+}

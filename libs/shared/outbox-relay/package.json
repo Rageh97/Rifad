@@ -1,0 +1,16 @@
+{
+  "name": "@rifad/outbox-relay", "version": "0.0.0", "private": true,
+  "main": "./dist/index.js", "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "default": "./dist/index.js" } },
+  "nx": { "tags": ["scope:shared", "layer:infrastructure", "runtime:cloud"] },
+  "dependencies": {
+    "@rifad/database": "workspace:*",
+    "@rifad/events": "workspace:*",
+    "@rifad/queue": "workspace:*",
+    "bullmq": "6.3.17",
+    "kysely": "0.29.7"
+  },
+  "devDependencies": {
+    "@rifad/test-containers": "workspace:*"
+  }
+}

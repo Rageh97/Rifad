@@ -12,7 +12,10 @@
       "@rifad/logging": ["libs/shared/logging/src/index.ts"],
       "@rifad/data-classification": ["libs/shared/data-classification/src/index.ts"],
       "@rifad/events": ["libs/shared/events/src/index.ts"],
-      "@rifad/database": ["libs/shared/database/src/index.ts"]
+      "@rifad/database": ["libs/shared/database/src/index.ts"],
+      "@rifad/queue": ["libs/shared/queue/src/index.ts"],
+      "@rifad/outbox-relay": ["libs/shared/outbox-relay/src/index.ts"],
+      "@rifad/test-containers": ["libs/shared/test-containers/src/index.ts"]
     }
   }
 }

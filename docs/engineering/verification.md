@@ -7,7 +7,7 @@
 | `pnpm check` | lint, typecheck, build, unit, architecture, governance tests, environment/governance/source checks and process smoke |
 | `pnpm check:security` | pinned Secretlint source scan and dependency advisory review (moderate or higher fails) |
 | `pnpm test:unit` | every `*.spec.ts` under apps/ and libs/ (fails when none are discovered) |
-| `pnpm test:integration` | build, then every `*.integration.spec.ts` against real disposable PostgreSQL 18.6 containers (requires a running Docker engine; fails, never skips, without it) |
+| `pnpm test:integration` | build, then every `*.integration.spec.ts` against real disposable PostgreSQL 18.6 and Redis 8.10 containers (requires a running Docker engine; fails, never skips, without it) |
 | `pnpm db:migrate` | apply pending migrations as the owner role to a loopback `RIFAD_DATABASE_OWNER_URL` |
 | `pnpm test:architecture` | real ESLint/Nx positive and negative boundary fixtures plus graph classification |
 | `pnpm test:governance` | source extraction and governance positive/negative fixtures |

@@ -1,6 +1,6 @@
 import type { NestFastifyApplication } from '@nestjs/platform-fastify';
 
-export type DependencyState = 'ready' | 'unavailable' | 'not_configured';
+export type DependencyState = 'ready' | 'unavailable' | 'not_configured' | 'misconfigured';
 export type ReadinessChecks = Readonly<Record<string, () => Promise<DependencyState>>>;
 
 /**

@@ -48,3 +48,21 @@ test('Cloud runtimes accept only loopback local database URLs; Edge never accept
     catch (error) { assert.ok(error instanceof ConfigError); assert.equal(error.field, 'RIFAD_DATABASE_URL'); assert.ok(!String(error).includes(canary)); }
   }
 });
+
+test('only the worker accepts relay database and queue Redis URLs, loopback only', () => {
+  const relay = ['postgres://rifad_relay', 'synthetic@127.0.0.1:55432/rifad'].join(':');
+  const redis = ['redis://', 'synthetic@127.0.0.1:56379/0'].join(':');
+  const worker = loadConfig('worker', { RIFAD_RELAY_DATABASE_URL: relay, RIFAD_QUEUE_REDIS_URL: redis });
+  assert.equal(worker.relayDatabaseUrl, relay);
+  assert.equal(worker.queueRedisUrl, redis);
+  for (const runtime of ['api', 'edge'] as const) {
+    assert.throws(() => loadConfig(runtime, { RIFAD_QUEUE_REDIS_URL: redis }), ConfigError);
+    assert.throws(() => loadConfig(runtime, { RIFAD_RELAY_DATABASE_URL: relay }), ConfigError);
+  }
+  const canary = ['synthetic', 'redis', 'secret'].join('-');
+  for (const value of [`redis://:${canary}@cache.example.com:6379`, `redis://:${canary}@127.0.0.1`, `rediss://:${canary}@127.0.0.1:6379`, `redis://:${canary}@127.0.0.1:6379/16`, `redis://:${canary}@127.0.0.1:6379/?db=1`]) {
+    try { loadConfig('worker', { RIFAD_QUEUE_REDIS_URL: value }); assert.fail('must reject'); }
+    catch (error) { assert.ok(error instanceof ConfigError); assert.equal(error.field, 'RIFAD_QUEUE_REDIS_URL'); assert.ok(!String(error).includes(canary)); }
+  }
+  assert.throws(() => loadConfig('worker', { RIFAD_RELAY_DATABASE_URL: relay.replace('127.0.0.1', '10.1.2.3') }), (error: ConfigError) => error.field === 'RIFAD_RELAY_DATABASE_URL');
+});

@@ -20,3 +20,4 @@ overrides:
 allowBuilds:
   nx: true
   esbuild: true
+  msgpackr-extract: false

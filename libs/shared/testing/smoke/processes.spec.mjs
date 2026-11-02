@@ -60,7 +60,7 @@ for(const runtime of ['edge','api','worker']) {
       if(runtime==='edge') assert.equal(readiness.status,404);
       else {
         assert.equal(readiness.status,503);
-        assert.deepEqual(await readiness.json(),{status:'not_ready',checks:{database:'not_configured'}});
+        assert.deepEqual(await readiness.json(),{status:'not_ready',checks:runtime==='worker'?{database:'not_configured',queue:'not_configured'}:{database:'not_configured'}});
       }
       state.child.send('shutdown');
       assert.equal((await within(state.exited,5000)).code,0);

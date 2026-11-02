@@ -9,10 +9,11 @@ import { sql, type Kysely } from 'kysely';
 import { Client } from 'pg';
 import { EnvelopeError, type EventEnvelope } from '@rifad/events';
 import {
-  MIGRATIONS, MigrationError, OWNER_ROLE, RUNTIME_ROLE, TenantContextError, appendToOutbox, auditRuntimeRole, auditTenantTables,
+  InboxError, MIGRATIONS, MigrationError, OWNER_ROLE, RELAY_ROLE, RUNTIME_ROLE, TenantContextError, appendToOutbox, auditRuntimeRole, auditTenantTables,
+  receiveOperation, sequenceGaps,
   checkDatabase, createDatabase, migrate, withTransaction, type Database, type PlatformDatabase,
 } from './index';
-import { startPostgres, type PostgresServer } from './test-support/postgres-container';
+import { startPostgres, type PostgresServer } from '@rifad/test-containers';
 
 /** Synthetic Cloud-owned business table used only to prove business change + outbox atomicity. */
 interface FixtureDatabase extends PlatformDatabase {
@@ -87,14 +88,19 @@ test('concurrent runs apply once; edited, removed or unordered migrations fail',
     // The audit itself must catch a tenant table created without RLS.
     await sql`CREATE TABLE public.unsafe (organization_id uuid NOT NULL)`.execute(scratch.db);
     assert.deepEqual((await auditTenantTables(scratch.db)).map(violation => violation.problem).sort(), ['NO_POLICY', 'RLS_DISABLED', 'RLS_NOT_FORCED']);
+    // ...and an all-rows policy that is not limited to the approved relay role.
+    await sql`ALTER TABLE public.unsafe ENABLE ROW LEVEL SECURITY, FORCE ROW LEVEL SECURITY`.execute(scratch.db);
+    await sql.raw(`CREATE POLICY open_all ON public.unsafe USING (true); CREATE POLICY open_app ON events.outbox FOR SELECT TO ${RUNTIME_ROLE} USING (true)`).execute(scratch.db);
+    assert.deepEqual((await auditTenantTables(scratch.db)).map(violation => violation.table + ':' + violation.problem).sort(), ['events.outbox:UNSCOPED_ALL_ROWS_POLICY', 'public.unsafe:UNSCOPED_ALL_ROWS_POLICY']);
   } finally { await scratch.close(); }
 });
 
 test('every tenant-owned table has forced RLS from creation and the runtime role cannot bypass it', async () => {
   assert.deepEqual(await auditTenantTables(owner.db), []);
   assert.deepEqual(await auditRuntimeRole(owner.db), []);
+  assert.deepEqual(await auditRuntimeRole(owner.db, RELAY_ROLE), []);
   const tables = await sql<{ table: string }>`select n.nspname || '.' || c.relname as table from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relrowsecurity order by 1`.execute(owner.db);
-  assert.deepEqual(tables.rows.map(row => row.table), ['events.outbox', 'fixture.settings']);
+  assert.deepEqual(tables.rows.map(row => row.table), ['events.outbox', 'fixture.settings', 'sync.inbox']);
 });
 
 test('tenant context isolates reads and writes; missing context denies by default', async () => {
@@ -162,11 +168,12 @@ test('readiness probe reports ready and unavailable without throwing', async () 
   try { assert.equal(await checkDatabase(unreachable.db, 3_000), 'unavailable'); } finally { await unreachable.close(); }
 });
 
-for (const runtime of ['api', 'worker'] as const) {
+// The worker also needs its queue; its full readiness and relay run are covered by the outbox-relay suite.
+for (const runtime of ['api'] as const) {
   test(`${runtime} reports traffic-ready only with a reachable database`, { timeout: 60_000 }, async () => {
     const port = await new Promise<number>(done => { const probe = createServer().listen(0, '127.0.0.1', () => { const value = (probe.address() as { port: number }).port; probe.close(() => done(value)); }); });
-    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('RIFAD_') && key !== 'NODE_OPTIONS'));
-    const child = fork(resolve('apps', runtime, 'dist/main.js'), [], { env: { ...env, RIFAD_ENV: 'test', NODE_ENV: 'test', RIFAD_PORT: String(port), RIFAD_DATABASE_URL: server.appUrl }, silent: true });
+    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('RIFAD_') && !key.startsWith('NODE_TEST') && key !== 'NODE_OPTIONS'));
+    const child = fork(resolve('apps', runtime, 'dist/main.js'), [], { env: { ...env, RIFAD_ENV: 'test', NODE_ENV: 'test', RIFAD_PORT: String(port), RIFAD_DATABASE_URL: server.appUrl }, silent: true, execArgv: [] });
     let output = '';
     child.stdout?.on('data', chunk => { output += chunk; });
     child.stderr?.on('data', chunk => { output += chunk; });
@@ -188,7 +195,7 @@ for (const runtime of ['api', 'worker'] as const) {
 
 test('db:migrate tool migrates as the owner role and refuses non-loopback servers', async () => {
   const runTool = (url: string) => new Promise<{ code: number | null; output: string }>(done => {
-    const child = fork(resolve('tools/db-migrate.mjs'), [], { env: { ...process.env, RIFAD_DATABASE_OWNER_URL: url }, silent: true });
+    const child = fork(resolve('tools/db-migrate.mjs'), [], { env: { ...process.env, RIFAD_DATABASE_OWNER_URL: url }, silent: true, execArgv: [] });
     let output = '';
     child.stdout?.on('data', chunk => { output += chunk; });
     child.stderr?.on('data', chunk => { output += chunk; });
@@ -200,4 +207,38 @@ test('db:migrate tool migrates as the owner role and refuses non-loopback server
   const refused = await runTool(server.ownerUrl.replace('127.0.0.1', 'db.example.com'));
   assert.equal(refused.code, 1);
   assert.ok(refused.output.includes('INVALID_OWNER_URL') && !refused.output.includes(server.ownerUrl.split('@')[0] ?? '<none>'));
+});
+
+interface ProjectionDatabase { 'fixture.projection': { organization_id: string; operation_id: string } }
+
+test('inbox: one Cloud effect per Edge operation, conflicts rejected, gaps observable', async () => {
+  await sql.raw(`
+    CREATE TABLE fixture.projection (organization_id uuid NOT NULL, operation_id uuid PRIMARY KEY);
+    ALTER TABLE fixture.projection ENABLE ROW LEVEL SECURITY; ALTER TABLE fixture.projection FORCE ROW LEVEL SECURITY;
+    CREATE POLICY projection_tenant ON fixture.projection USING (organization_id = rifad.current_organization_id()) WITH CHECK (organization_id = rifad.current_organization_id());
+    GRANT SELECT, INSERT ON fixture.projection TO ${RUNTIME_ROLE};`).execute(owner.db);
+  const source = randomUUID();
+  const operation = (sequence: number, overrides: Record<string, unknown> = {}) => ({ organizationId: orgA, sourceId: source, operationId: randomUUID(), sourceSequence: sequence, operationType: 'restaurant.check_round.submitted', payload: { round: sequence, lines: [{ b: 2, a: 1 }] }, ...overrides });
+  const deliver = (op: ReturnType<typeof operation>) => withTransaction(app.db as unknown as Kysely<ProjectionDatabase>, { organizationId: orgA }, trx =>
+    receiveOperation(trx, op, async () => { await trx.insertInto('fixture.projection').values({ organization_id: orgA, operation_id: op.operationId }).execute(); }));
+  const first = operation(1);
+  assert.equal(await deliver(first), 'APPLIED');
+  assert.equal(await deliver({ ...first, payload: { lines: [{ a: 1, b: 2 }], round: 1 } }), 'DUPLICATE');
+  assert.equal(await deliver(operation(2)), 'APPLIED');
+  assert.equal(await deliver(operation(5)), 'APPLIED_WITH_GAP');
+  const projected = await withTransaction(app.db as unknown as Kysely<ProjectionDatabase>, { organizationId: orgA }, trx => trx.selectFrom('fixture.projection').select('operation_id').execute());
+  assert.equal(projected.length, 3);
+  assert.deepEqual(await withTransaction(app.db, { organizationId: orgA }, trx => sequenceGaps(trx, orgA, source)), [{ from: 3, to: 4 }]);
+  const conflict = async (op: ReturnType<typeof operation>) => { const error = await deliver(op).catch(caught => caught); return error instanceof InboxError ? error.code : 'NO_ERROR'; };
+  assert.equal(await conflict({ ...first, payload: { round: 99, lines: [] } }), 'INBOX_OPERATION_CONFLICT');
+  assert.equal(await conflict(operation(2)), 'INBOX_SEQUENCE_CONFLICT');
+  assert.equal(await conflict(operation(0)), 'INBOX_INVALID_OPERATION');
+  // A failed projection effect rolls back the inbox row, so redelivery is applied later rather than lost.
+  const late = operation(3);
+  await assert.rejects(withTransaction(app.db, { organizationId: orgA }, trx => receiveOperation(trx, late, async () => { throw new Error('projection failed'); })), /projection failed/);
+  assert.equal(await deliver(late), 'APPLIED');
+  assert.deepEqual(await withTransaction(app.db, { organizationId: orgA }, trx => sequenceGaps(trx, orgA, source)), [{ from: 4, to: 4 }]);
+  // Tenant isolation holds for the inbox as well.
+  assert.deepEqual(await withTransaction(app.db, { organizationId: orgB }, trx => sequenceGaps(trx, orgB, source)), []);
+  assert.equal(await withTransaction(app.db, { organizationId: orgB }, trx => sql<{ n: string }>`select count(*) as n from sync.inbox`.execute(trx)).then(result => Number(result.rows[0]?.n)), 0);
 });
