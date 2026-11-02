@@ -28,6 +28,7 @@
     "check": "pnpm lint && pnpm typecheck && pnpm build && pnpm test:unit && pnpm test:architecture && pnpm test:governance && pnpm test:agent-pipeline && pnpm check:env && pnpm check:governance && pnpm architecture:verify && pnpm test:smoke",
     "agent:preflight": "node tools/agent-pipeline/cli.mjs preflight",
     "agent:run": "node tools/agent-pipeline/cli.mjs run",
+    "codex:handoff": "node tools/codex-handoff.mjs",
     "dev:api": "tsx apps/api/src/main.ts",
     "dev:worker": "tsx apps/worker/src/main.ts",
     "dev:edge": "tsx apps/edge/src/main.ts"
