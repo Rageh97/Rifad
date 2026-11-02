@@ -6,7 +6,14 @@ Every event uses the [`EventEnvelope`](../../libs/shared/events/src/envelope.ts)
 
 ## Implemented events
 
-None yet: no business context produces events. Platform tests use synthetic `platform.*` events only.
+| Event type | Plane / ordering | Producer (context, runtime) | Payload contract | Consumers (name → context) | Data classes | Status / evidence |
+| --- | --- | --- | --- | --- | --- | --- |
+| `restaurant.check.opened.v1` | EDGE / PER_AGGREGATE (check) | Ordering, Edge | `CheckOpenedV1` | none yet | internal | B009b/B009c, pending verification |
+| `restaurant.check_round.submitted.v1` | EDGE / PER_AGGREGATE (check) | Ordering, Edge | `CheckRoundSubmittedV1` | Kitchen, consumption (planned) | internal, financial (prices) | B009b/B009c, pending verification |
+| `restaurant.item.voided.v1` | EDGE / PER_AGGREGATE (check) | Ordering, Edge | `ItemVoidedV1` | Kitchen, consumption reversal (planned) | internal | B009b/B009c, pending verification |
+| `restaurant.check.cancelled.v1` | EDGE / PER_AGGREGATE (check) | Ordering, Edge | `CheckCancelledV1` | Kitchen (planned) | internal | B009b/B009c, pending verification |
+
+Payload types and `validateOrderingPayload` live in [ordering-contract](../../libs/restaurant/ordering/contract/src/events.ts). Platform tests also use synthetic `platform.*` events.
 
 ## Row template
 

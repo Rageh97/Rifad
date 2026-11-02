@@ -41,3 +41,6 @@ export interface FinalizationReceipt {
   readonly finalizationId: string;
   readonly finalizedAt: string;
 }
+
+export { ORDERING_EVENT_TYPES, OrderingEventError, validateOrderingPayload } from './events';
+export type { CheckCancelledV1, CheckOpenedV1, CheckRoundSubmittedV1, ItemVoidedV1 } from './events';

@@ -81,6 +81,7 @@ export function openCheck(input: { checkId: string; organizationId: string; bran
 /** Adds an editable line with its sale-time price snapshot (M0-030). */
 export function addLine(check: Check, input: { lineId: string; productId: string; quantity: number; price: PriceSnapshot }, clock: Clock): Changed {
   requireOpen(check);
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(input.productId)) throw invalid('INVALID_PRODUCT_ID', 'Product ID must be a UUID.');
   if (!Number.isInteger(input.quantity) || input.quantity < 1 || input.quantity > 999) throw invalid('INVALID_QUANTITY', 'Quantity must be 1-999.');
   if (input.price.productId !== input.productId || input.price.currency !== check.currency || input.price.channel !== check.channel) {
     throw invalid('PRICE_SNAPSHOT_MISMATCH', 'Price snapshot does not match the line.');
