@@ -15,6 +15,6 @@ In separate terminals use `pnpm dev:api`, `pnpm dev:worker`, `pnpm dev:edge`. Ea
 
 Set optional RIFAD_ENV=local|test, RIFAD_RUNTIME matching the process, RIFAD_HOST=127.0.0.1 and RIFAD_PORT=1..65535. Defaults work without an environment file. The [example](../../infra/local/.env.example) is documentation, not automatically loaded. Production/staging and unknown RIFAD settings fail closed in this batch; no real endpoints or secrets are accepted as project configuration.
 
-No database, Redis, Cloud service, terminal or provider is required. Edge startup must work alone. An occupied port or invalid configuration emits a stable value-free failure and exits nonzero. Process smoke tests use ephemeral ports and a loopback-only network guard.
+No database, Redis, Cloud service, terminal or provider is required to start. API and worker accept an optional loopback `RIFAD_DATABASE_URL`; `GET /health/ready` reports 503 until it is configured and reachable. `pnpm test:integration` needs a running Docker engine and starts its own disposable PostgreSQL containers; it never uses an existing database. Edge startup must work alone. An occupied port or invalid configuration emits a stable value-free failure and exits nonzero. Process smoke tests use ephemeral ports and a loopback-only network guard.
 
 `pnpm build` uses TypeScript project references. Nx discovers tagged projects and their dependency graph; no Nx Cloud account is configured. Generated/temporary files are ignored. Do not introduce a persistence or external-provider workaround for a Batch 1 startup problem.

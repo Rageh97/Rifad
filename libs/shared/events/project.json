@@ -1,0 +1,5 @@
+{
+  "name": "events", "sourceRoot": "libs/shared/events/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:contract", "runtime:shared"],
+  "targets": { "build": { "command": "tsc -b libs/shared/events", "outputs": ["{projectRoot}/dist"] } }
+}

@@ -9,7 +9,7 @@ import type { InjectOptions } from 'fastify';
 import { DomainError } from '@rifad/kernel';
 import { createLogger } from '@rifad/logging';
 import { requireContext } from '@rifad/request-context';
-import { configureHttpPlatform, toApiError } from './index';
+import { configureHttpPlatform, registerReadiness, toApiError, type DependencyState } from './index';
 
 const canary = ['synthetic', 'secret', 'canary'].join('-');
 
@@ -107,4 +107,28 @@ test('each request logs one redacted completion line correlated with the respons
   });
   assert.equal(typeof lines[0]?.['durationMs'], 'number');
   assert.ok(!JSON.stringify(logs).includes(canary));
+});
+
+test('readiness is 200 only when every dependency is ready and never leaks details', async () => {
+  const states: Record<string, DependencyState> = { database: 'ready', queue: 'ready' };
+  const probe = await NestFactory.create<NestFastifyApplication>(ProbeRoot, new FastifyAdapter({ logger: false }), { logger: false });
+  configureHttpPlatform(probe, logger);
+  registerReadiness(probe, {
+    database: async () => states['database'] ?? 'unavailable',
+    queue: async () => { if (states['queue'] === 'unavailable') throw new Error(canary); return states['queue'] ?? 'unavailable'; },
+  });
+  await probe.init();
+  const fastify = probe.getHttpAdapter().getInstance();
+  try {
+    const ready = await fastify.inject({ method: 'GET', url: '/health/ready' });
+    assert.equal(ready.statusCode, 200);
+    assert.deepEqual(JSON.parse(ready.body), { status: 'ready', checks: { database: 'ready', queue: 'ready' } });
+    states['database'] = 'not_configured';
+    states['queue'] = 'unavailable';
+    const notReady = await fastify.inject({ method: 'GET', url: '/health/ready' });
+    assert.equal(notReady.statusCode, 503);
+    assert.deepEqual(JSON.parse(notReady.body), { status: 'not_ready', checks: { database: 'not_configured', queue: 'unavailable' } });
+    assert.ok(!notReady.body.includes(canary));
+  } finally { await probe.close(); }
+  assert.throws(() => registerReadiness(app, {}), TypeError);
 });

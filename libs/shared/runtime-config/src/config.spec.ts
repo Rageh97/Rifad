@@ -30,3 +30,21 @@ test('rejects unknown owned settings and does not echo secrets or keys', () => {
     catch (error) { assert.ok(error instanceof ConfigError); assert.ok(!String(error).includes(canary)); }
   }
 });
+
+test('Cloud runtimes accept only loopback local database URLs; Edge never accepts one', () => {
+  // Assembled so secret scanning does not treat the synthetic fixture as a credential.
+  const url = ['postgres://rifad_app', 'synthetic@127.0.0.1:55432/rifad'].join(':');
+  assert.equal(loadConfig('api', { RIFAD_DATABASE_URL: url }).databaseUrl, url);
+  assert.equal(loadConfig('worker', { RIFAD_DATABASE_URL: url.replace('postgres:', 'postgresql:') }).databaseUrl?.startsWith('postgresql:'), true);
+  assert.equal('databaseUrl' in loadConfig('api', {}), false);
+  assert.throws(() => loadConfig('edge', { RIFAD_DATABASE_URL: url }), ConfigError);
+  const canary = ['synthetic', 'db', 'secret'].join('-');
+  for (const value of [
+    `postgres://rifad_app:${canary}@db.example.com:5432/rifad`, `postgres://rifad_app:${canary}@10.0.0.5:5432/rifad`,
+    `postgres://rifad_app:${canary}@127.0.0.1/rifad`, `postgres://rifad_app:${canary}@127.0.0.1:5432/`, `postgres://rifad_app:${canary}@127.0.0.1:5432/rifad?sslmode=disable`,
+    `mysql://rifad_app:${canary}@127.0.0.1:3306/rifad`, `postgres://:${canary}@127.0.0.1:5432/rifad`, canary,
+  ]) {
+    try { loadConfig('api', { RIFAD_DATABASE_URL: value }); assert.fail('must reject ' + value.split('@')[1]); }
+    catch (error) { assert.ok(error instanceof ConfigError); assert.equal(error.field, 'RIFAD_DATABASE_URL'); assert.ok(!String(error).includes(canary)); }
+  }
+});

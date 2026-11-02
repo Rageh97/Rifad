@@ -1,0 +1,12 @@
+export { checkDatabase, createDatabase } from './database';
+export type { Database, DatabaseOptions, PlatformDatabase } from './database';
+export { TenantContextError, withTransaction } from './unit-of-work';
+export type { TransactionScope } from './unit-of-work';
+export { appendToOutbox } from './outbox';
+export type { EventsOutboxTable } from './outbox';
+export { MIGRATIONS, MigrationError, RUNTIME_ROLE, checksum, migrate } from './migrations';
+export type { Migration } from './migrations';
+export { auditRuntimeRole, auditTenantTables } from './rls-audit';
+export type { RlsViolation } from './rls-audit';
+export { OWNER_ROLE, provisionLocalDatabase } from './provision';
+export type { LocalProvisioning } from './provision';

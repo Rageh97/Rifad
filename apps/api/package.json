@@ -7,6 +7,7 @@
     "@nestjs/common": "11.2.5",
     "@nestjs/core": "11.2.5",
     "@nestjs/platform-fastify": "11.2.5",
+    "@rifad/database": "workspace:*",
     "@rifad/http-platform": "workspace:*",
     "@rifad/logging": "workspace:*",
     "@rifad/runtime-config": "workspace:*",

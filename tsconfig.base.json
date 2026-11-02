@@ -10,7 +10,9 @@
       "@rifad/request-context": ["libs/shared/request-context/src/index.ts"],
       "@rifad/http-platform": ["libs/shared/http-platform/src/index.ts"],
       "@rifad/logging": ["libs/shared/logging/src/index.ts"],
-      "@rifad/data-classification": ["libs/shared/data-classification/src/index.ts"]
+      "@rifad/data-classification": ["libs/shared/data-classification/src/index.ts"],
+      "@rifad/events": ["libs/shared/events/src/index.ts"],
+      "@rifad/database": ["libs/shared/database/src/index.ts"]
     }
   }
 }
