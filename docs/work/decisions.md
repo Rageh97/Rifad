@@ -12,7 +12,7 @@ Ownership (user chat, 2026-11-01): the team is one developer with agents. The re
 | --- | --- | --- | --- |
 | G01 | Baseline / pilot / approved cut | 29.1, M-1-001–003 | OPEN |
 | G02 | NFR / retention / operating envelope | 29.2, M-1-004 | OPEN |
-| G03 | Check / round / correction semantics | 9–10, M-1-005 | PARTIAL (2026-11-02): takeaway/delivery use the same Open Check aggregate as dine-in; voiding a submitted item needs a controlled reason code plus manager approval, recorded with actor and preparation state; M1A split payment is by items only. Still OPEN: full Check/Round state transitions, cancellation charges |
+| G03 | Check / round / correction semantics | 9–10, M-1-005 | PARTIAL (2026-11-02): takeaway/delivery use the same Open Check aggregate as dine-in; voiding a submitted item needs a controlled reason code plus manager approval, recorded with actor and preparation state; M1A split payment is by items only. Added 2026-11-02: cancelling a whole check after any round was sent needs a reason code plus manager approval; a CLOSED check is never reopened (corrections only by refund/credit note). State machine per §9.1 (OPEN → CLOSING → CLOSED, OPEN → CANCELLED). Still OPEN: cancellation charges, the controlled reason-code list |
 | G04 | Price / stock / UOM / valuation / snapshot policy | 11, M-1-006–008 | OPEN |
 | G05 | M1A real COGS source placement versus M1B dependency | 32.1–32.2, M-1-016/019 | OPEN |
 | G06 | Fiscalization / finalization / external uncertainty / recovery | 12.2, M-1-010/016 | OPEN |
