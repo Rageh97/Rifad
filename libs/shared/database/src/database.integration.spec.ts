@@ -1,0 +1,203 @@
+import assert from 'node:assert/strict';
+import { fork } from 'node:child_process';
+import { randomUUID } from 'node:crypto';
+import { once } from 'node:events';
+import { createServer } from 'node:net';
+import { resolve } from 'node:path';
+import { after, before, test } from 'node:test';
+import { sql, type Kysely } from 'kysely';
+import { Client } from 'pg';
+import { EnvelopeError, type EventEnvelope } from '@rifad/events';
+import {
+  MIGRATIONS, MigrationError, OWNER_ROLE, RUNTIME_ROLE, TenantContextError, appendToOutbox, auditRuntimeRole, auditTenantTables,
+  checkDatabase, createDatabase, migrate, withTransaction, type Database, type PlatformDatabase,
+} from './index';
+import { startPostgres, type PostgresServer } from './test-support/postgres-container';
+
+/** Synthetic Cloud-owned business table used only to prove business change + outbox atomicity. */
+interface FixtureDatabase extends PlatformDatabase {
+  'fixture.settings': { organization_id: string; key: string; value: string };
+}
+
+let server: PostgresServer;
+let owner: Database<FixtureDatabase>;
+let app: Database<FixtureDatabase>;
+let firstRun: string[];
+const orgA = randomUUID();
+const orgB = randomUUID();
+
+function envelope(organizationId: string, overrides: Partial<EventEnvelope> = {}): EventEnvelope {
+  return {
+    eventId: randomUUID(), eventType: 'platform.setting_changed.v1', eventVersion: 1, plane: 'CLOUD', ordering: 'PER_AGGREGATE',
+    organizationId, branchId: null, aggregateType: 'organization_setting', aggregateId: randomUUID(), aggregateVersion: 1,
+    occurredAt: '2026-11-02T10:00:00.000Z', correlationId: 'it-' + randomUUID().slice(0, 8), causationId: null,
+    idempotencyKey: 'key-' + randomUUID(), payload: { key: 'timezone' }, ...overrides,
+  };
+}
+
+async function pgError(promise: Promise<unknown>): Promise<string> {
+  try { await promise; return 'NO_ERROR'; }
+  catch (error) { return String((error as { code?: unknown }).code ?? (error as Error).name); }
+}
+
+const count = (db: Kysely<FixtureDatabase>, table: 'events.outbox' | 'fixture.settings') =>
+  db.selectFrom(table).select(eb => eb.fn.countAll<string>().as('n')).executeTakeFirstOrThrow().then(row => Number(row.n));
+
+before(async () => {
+  server = await startPostgres();
+  owner = createDatabase<FixtureDatabase>(server.ownerUrl, { applicationName: 'rifad-it-owner', maxConnections: 2 });
+  firstRun = await migrate(owner.db);
+  await sql.raw(`
+    CREATE SCHEMA fixture;
+    GRANT USAGE ON SCHEMA fixture TO ${RUNTIME_ROLE};
+    CREATE TABLE fixture.settings (organization_id uuid NOT NULL, key text NOT NULL, value text NOT NULL, PRIMARY KEY (organization_id, key));
+    ALTER TABLE fixture.settings ENABLE ROW LEVEL SECURITY;
+    ALTER TABLE fixture.settings FORCE ROW LEVEL SECURITY;
+    CREATE POLICY settings_tenant ON fixture.settings USING (organization_id = rifad.current_organization_id()) WITH CHECK (organization_id = rifad.current_organization_id());
+    GRANT SELECT, INSERT ON fixture.settings TO ${RUNTIME_ROLE};`).execute(owner.db);
+  // One pooled connection makes context leakage between transactions observable.
+  app = createDatabase<FixtureDatabase>(server.appUrl, { applicationName: 'rifad-it-app', maxConnections: 1 });
+}, { timeout: 360_000 });
+
+after(async () => {
+  await app?.close();
+  await owner?.close();
+  await server?.stop();
+});
+
+test('fresh database migrates in order and re-running is a no-op', async () => {
+  assert.deepEqual(firstRun, MIGRATIONS.map(migration => migration.id));
+  assert.deepEqual(await migrate(owner.db), []);
+  const rows = await sql<{ id: string; owner: string }>`select id, owner from rifad_meta.schema_migrations order by id`.execute(owner.db);
+  assert.deepEqual(rows.rows, MIGRATIONS.map(({ id, owner: module }) => ({ id, owner: module })));
+});
+
+test('concurrent runs apply once; edited, removed or unordered migrations fail', async () => {
+  const admin = new Client({ connectionString: server.adminUrl });
+  await admin.connect();
+  try { await admin.query(`CREATE DATABASE rifad_scratch OWNER ${OWNER_ROLE}`); } finally { await admin.end(); }
+  const scratch = createDatabase(server.ownerUrl.replace(/\/rifad$/, '/rifad_scratch'), { applicationName: 'rifad-it-scratch', maxConnections: 4 });
+  try {
+    const [left, right] = await Promise.all([migrate(scratch.db), migrate(scratch.db)]);
+    assert.deepEqual([...left, ...right].sort(), MIGRATIONS.map(migration => migration.id));
+    const edited = MIGRATIONS.map((migration, index) => index === 0 ? { ...migration, sql: migration.sql + '\n-- edited' } : migration);
+    assert.equal(((await migrate(scratch.db, edited).catch(error => error)) as MigrationError).code, 'MIGRATION_CHECKSUM_MISMATCH');
+    assert.equal(((await migrate(scratch.db, MIGRATIONS.slice(0, 1)).catch(error => error)) as MigrationError).code, 'MIGRATION_UNKNOWN_APPLIED');
+    assert.equal(((await migrate(scratch.db, [...MIGRATIONS].reverse()).catch(error => error)) as MigrationError).code, 'MIGRATION_INVALID');
+    // The audit itself must catch a tenant table created without RLS.
+    await sql`CREATE TABLE public.unsafe (organization_id uuid NOT NULL)`.execute(scratch.db);
+    assert.deepEqual((await auditTenantTables(scratch.db)).map(violation => violation.problem).sort(), ['NO_POLICY', 'RLS_DISABLED', 'RLS_NOT_FORCED']);
+  } finally { await scratch.close(); }
+});
+
+test('every tenant-owned table has forced RLS from creation and the runtime role cannot bypass it', async () => {
+  assert.deepEqual(await auditTenantTables(owner.db), []);
+  assert.deepEqual(await auditRuntimeRole(owner.db), []);
+  const tables = await sql<{ table: string }>`select n.nspname || '.' || c.relname as table from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relrowsecurity order by 1`.execute(owner.db);
+  assert.deepEqual(tables.rows.map(row => row.table), ['events.outbox', 'fixture.settings']);
+});
+
+test('tenant context isolates reads and writes; missing context denies by default', async () => {
+  await withTransaction(app.db, { organizationId: orgA }, trx => appendToOutbox(trx, envelope(orgA)));
+  assert.equal(await withTransaction(app.db, { organizationId: orgA }, trx => count(trx, 'events.outbox')), 1);
+  assert.equal(await withTransaction(app.db, { organizationId: orgB }, trx => count(trx, 'events.outbox')), 0);
+  assert.equal(await withTransaction(app.db, 'platform', trx => count(trx, 'events.outbox')), 0);
+  assert.equal(await count(app.db, 'events.outbox'), 0);
+  // Writing another tenant's row, or any row without context, violates the RLS WITH CHECK policy.
+  assert.equal(await pgError(withTransaction(app.db, { organizationId: orgA }, trx => appendToOutbox(trx, envelope(orgB)))), '42501');
+  assert.equal(await pgError(withTransaction(app.db, 'platform', trx => appendToOutbox(trx, envelope(orgA)))), '42501');
+  assert.equal(await pgError(appendToOutbox(app.db, envelope(orgA))), '42501');
+  // Published events are immutable to the runtime role; it has no UPDATE/DELETE, DDL or metadata access.
+  for (const statement of [
+    sql`update events.outbox set status = 'PUBLISHED'`, sql`delete from events.outbox`, sql`select * from rifad_meta.schema_migrations`,
+    sql`create table events.rogue (id int)`, sql`create table public.rogue (id int)`, sql`alter table events.outbox disable row level security`,
+  ]) {
+    assert.equal(await pgError(withTransaction(app.db, { organizationId: orgA }, trx => statement.execute(trx))), '42501');
+  }
+  assert.equal(await withTransaction(app.db, { organizationId: orgA }, trx => count(trx, 'events.outbox')), 1);
+});
+
+test('transaction-local tenant context never leaks to the next pooled transaction', async () => {
+  await withTransaction(app.db, { organizationId: orgA }, async trx => {
+    assert.equal((await sql<{ org: string }>`select rifad.current_organization_id()::text as org`.execute(trx)).rows[0]?.org, orgA);
+  });
+  const next = await sql<{ org: string | null }>`select rifad.current_organization_id()::text as org`.execute(app.db);
+  assert.equal(next.rows[0]?.org, null);
+  await assert.rejects(withTransaction(app.db, { organizationId: 'not-a-uuid' }, async () => 1), TenantContextError);
+});
+
+test('business change and outbox event commit or roll back together', async () => {
+  const before = await withTransaction(app.db, { organizationId: orgB }, trx => count(trx, 'events.outbox'));
+  await assert.rejects(withTransaction(app.db, { organizationId: orgB }, async trx => {
+    await trx.insertInto('fixture.settings').values({ organization_id: orgB, key: 'timezone', value: 'Asia/Riyadh' }).execute();
+    await appendToOutbox(trx, envelope(orgB));
+    throw new Error('simulated failure after both writes');
+  }), /simulated failure/);
+  assert.equal(await withTransaction(app.db, { organizationId: orgB }, trx => count(trx, 'fixture.settings')), 0);
+  assert.equal(await withTransaction(app.db, { organizationId: orgB }, trx => count(trx, 'events.outbox')), before);
+  await withTransaction(app.db, { organizationId: orgB }, async trx => {
+    await trx.insertInto('fixture.settings').values({ organization_id: orgB, key: 'timezone', value: 'Asia/Riyadh' }).execute();
+    await appendToOutbox(trx, envelope(orgB));
+  });
+  assert.equal(await withTransaction(app.db, { organizationId: orgB }, trx => count(trx, 'fixture.settings')), 1);
+  assert.equal(await withTransaction(app.db, { organizationId: orgB }, trx => count(trx, 'events.outbox')), before + 1);
+});
+
+test('outbox enforces idempotency, per-aggregate version uniqueness and Cloud-only planes', async () => {
+  const first = envelope(orgA);
+  await withTransaction(app.db, { organizationId: orgA }, trx => appendToOutbox(trx, first));
+  assert.equal(await pgError(withTransaction(app.db, { organizationId: orgA }, trx => appendToOutbox(trx, { ...first, eventId: randomUUID() }))), '23505');
+  assert.equal(await pgError(withTransaction(app.db, { organizationId: orgA }, trx => appendToOutbox(trx, { ...first, eventId: randomUUID(), idempotencyKey: 'other-' + randomUUID() }))), '23505');
+  await assert.rejects(withTransaction(app.db, { organizationId: orgA }, trx => appendToOutbox(trx, envelope(orgA, { plane: 'EDGE' }))), EnvelopeError);
+  await assert.rejects(withTransaction(app.db, { organizationId: orgA }, trx => appendToOutbox(trx, envelope(orgA, { plane: 'EDGE_TO_CLOUD' }))), EnvelopeError);
+  const stored = await withTransaction(app.db, { organizationId: orgA }, trx => trx.selectFrom('events.outbox').selectAll().where('event_id', '=', first.eventId).executeTakeFirstOrThrow());
+  assert.deepEqual(stored.payload, { key: 'timezone' });
+  assert.equal(new Date(stored.occurred_at).toISOString(), first.occurredAt);
+});
+
+test('readiness probe reports ready and unavailable without throwing', async () => {
+  assert.equal(await checkDatabase(app.db), 'ready');
+  const closedPort = await new Promise<number>(done => { const probe = createServer().listen(0, '127.0.0.1', () => { const port = (probe.address() as { port: number }).port; probe.close(() => done(port)); }); });
+  const unreachable = createDatabase(`postgres://${RUNTIME_ROLE}:x@127.0.0.1:${closedPort}/rifad`, { applicationName: 'rifad-it-down' });
+  try { assert.equal(await checkDatabase(unreachable.db, 3_000), 'unavailable'); } finally { await unreachable.close(); }
+});
+
+for (const runtime of ['api', 'worker'] as const) {
+  test(`${runtime} reports traffic-ready only with a reachable database`, { timeout: 60_000 }, async () => {
+    const port = await new Promise<number>(done => { const probe = createServer().listen(0, '127.0.0.1', () => { const value = (probe.address() as { port: number }).port; probe.close(() => done(value)); }); });
+    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('RIFAD_') && key !== 'NODE_OPTIONS'));
+    const child = fork(resolve('apps', runtime, 'dist/main.js'), [], { env: { ...env, RIFAD_ENV: 'test', NODE_ENV: 'test', RIFAD_PORT: String(port), RIFAD_DATABASE_URL: server.appUrl }, silent: true });
+    let output = '';
+    child.stdout?.on('data', chunk => { output += chunk; });
+    child.stderr?.on('data', chunk => { output += chunk; });
+    try {
+      let response: Response | undefined;
+      for (const deadline = Date.now() + 20_000; Date.now() < deadline;) {
+        try { response = await fetch(`http://127.0.0.1:${port}/health/ready`, { signal: AbortSignal.timeout(2_000) }); break; }
+        catch { await new Promise(done => setTimeout(done, 100)); }
+      }
+      assert.equal(response?.status, 200, output);
+      assert.deepEqual(await response?.json(), { status: 'ready', checks: { database: 'ready' } });
+      assert.ok(!output.includes(server.appUrl.split('@')[0]?.split(':')[2] ?? '<none>'), 'database password must not be logged');
+    } finally {
+      child.send('shutdown');
+      await once(child, 'exit');
+    }
+  });
+}
+
+test('db:migrate tool migrates as the owner role and refuses non-loopback servers', async () => {
+  const runTool = (url: string) => new Promise<{ code: number | null; output: string }>(done => {
+    const child = fork(resolve('tools/db-migrate.mjs'), [], { env: { ...process.env, RIFAD_DATABASE_OWNER_URL: url }, silent: true });
+    let output = '';
+    child.stdout?.on('data', chunk => { output += chunk; });
+    child.stderr?.on('data', chunk => { output += chunk; });
+    child.on('exit', code => done({ code, output }));
+  });
+  const applied = await runTool(server.ownerUrl);
+  assert.equal(applied.code, 0, applied.output);
+  assert.deepEqual(JSON.parse(applied.output.trim()), { event: 'db.migrate.completed', applied: [] });
+  const refused = await runTool(server.ownerUrl.replace('127.0.0.1', 'db.example.com'));
+  assert.equal(refused.code, 1);
+  assert.ok(refused.output.includes('INVALID_OWNER_URL') && !refused.output.includes(server.ownerUrl.split('@')[0] ?? '<none>'));
+});

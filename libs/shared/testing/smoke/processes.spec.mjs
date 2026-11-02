@@ -55,6 +55,13 @@ for(const runtime of ['edge','api','worker']) {
       const body=await missing.json();
       assert.deepEqual(body,{error:{code:'NOT_FOUND',message:'Resource was not found.',requestId:missing.headers.get('x-request-id')}});
       assert.match(body.error.requestId,/^[0-9a-f-]{36}$/);
+      // Liveness never depends on the database; readiness does. Edge has no Cloud database at all.
+      const readiness=await fetch('http://127.0.0.1:'+port+'/health/ready');
+      if(runtime==='edge') assert.equal(readiness.status,404);
+      else {
+        assert.equal(readiness.status,503);
+        assert.deepEqual(await readiness.json(),{status:'not_ready',checks:{database:'not_configured'}});
+      }
       state.child.send('shutdown');
       assert.equal((await within(state.exited,5000)).code,0);
       assert.equal(state.output().stderr,'');

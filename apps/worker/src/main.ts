@@ -2,7 +2,8 @@ import 'reflect-metadata';
 import { Controller, Get, Module } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, type NestFastifyApplication } from '@nestjs/platform-fastify';
-import { configureHttpPlatform } from '@rifad/http-platform';
+import { checkDatabase, createDatabase } from '@rifad/database';
+import { configureHttpPlatform, registerReadiness } from '@rifad/http-platform';
 import { createLogger } from '@rifad/logging';
 import { ConfigError, loadConfig } from '@rifad/runtime-config';
 
@@ -24,11 +25,15 @@ async function bootstrap(): Promise<void> {
   // Framework logging stays disabled; the structured logger writes redacted JSON lines instead.
   const app = await NestFactory.create<NestFastifyApplication>(WorkerRoot, new FastifyAdapter({ logger: false }), { logger: false });
   configureHttpPlatform(app, logger);
+  // The pool connects lazily: an unreachable database affects readiness, never liveness or startup.
+  const database = config.databaseUrl === undefined ? undefined : createDatabase(config.databaseUrl, { applicationName: 'rifad-worker' });
+  registerReadiness(app, { database: async () => database ? checkDatabase(database.db) : 'not_configured' });
   let stopping = false;
   const stop = async () => {
     if (stopping) return;
     stopping = true;
     await app.close();
+    await database?.close();
     process.exitCode = 0;
   };
   process.once('SIGTERM', () => { void stop(); });
@@ -41,9 +46,10 @@ async function bootstrap(): Promise<void> {
     await app.listen(config.port, config.host);
   } catch {
     await app.close();
+    await database?.close();
     throw new Error('LISTEN_FAILED');
   }
-  logger.info('runtime.started', { environment: config.environment, host: config.host, port: config.port });
+  logger.info('runtime.started', { environment: config.environment, host: config.host, port: config.port, database: database ? 'configured' : 'not_configured' });
 }
 
 void bootstrap().catch(error => {

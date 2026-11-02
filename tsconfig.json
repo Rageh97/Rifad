@@ -17,6 +17,12 @@
       "path": "libs/shared/data-classification"
     },
     {
+      "path": "libs/shared/events"
+    },
+    {
+      "path": "libs/shared/database"
+    },
+    {
       "path": "libs/shared/http-platform"
     },
     {

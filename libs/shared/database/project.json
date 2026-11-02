@@ -1,0 +1,5 @@
+{
+  "name": "database", "sourceRoot": "libs/shared/database/src", "projectType": "library",
+  "tags": ["scope:shared", "layer:infrastructure", "runtime:cloud"],
+  "targets": { "build": { "command": "tsc -b libs/shared/database", "outputs": ["{projectRoot}/dist"] } }
+}

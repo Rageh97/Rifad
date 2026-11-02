@@ -56,8 +56,10 @@ test('batch scope/dependency/status violations fail', () => {
 
 test('unit test discovery finds workspace specs and fails on an empty workspace', () => {
   assert.ok(discoverUnitTests().includes('libs/shared/runtime-config/src/config.spec.ts'));
+  assert.ok(!discoverUnitTests().some(file => file.endsWith('.integration.spec.ts')));
+  assert.deepEqual(discoverUnitTests(process.cwd(), true), ['libs/shared/database/src/database.integration.spec.ts']);
   const empty = mkdtempSync(join(tmpdir(), 'rifad-empty-'));
-  try { assert.throws(()=>discoverUnitTests(empty), /No unit test files/); }
+  try { assert.throws(()=>discoverUnitTests(empty), /No unit test files/); assert.throws(()=>discoverUnitTests(empty, true), /No integration test files/); }
   finally { rmSync(empty, { recursive: true, force: true }); }
 });
 
