@@ -100,7 +100,7 @@ test('every tenant-owned table has forced RLS from creation and the runtime role
   assert.deepEqual(await auditRuntimeRole(owner.db), []);
   assert.deepEqual(await auditRuntimeRole(owner.db, RELAY_ROLE), []);
   const tables = await sql<{ table: string }>`select n.nspname || '.' || c.relname as table from pg_class c join pg_namespace n on n.oid = c.relnamespace where c.relrowsecurity order by 1`.execute(owner.db);
-  assert.deepEqual(tables.rows.map(row => row.table), ['events.outbox', 'fixture.settings', 'sync.inbox']);
+  assert.deepEqual(tables.rows.map(row => row.table), ['events.consumer_position', 'events.consumer_processed', 'events.outbox', 'fixture.settings', 'sync.inbox']);
 });
 
 test('tenant context isolates reads and writes; missing context denies by default', async () => {
@@ -203,7 +203,12 @@ test('db:migrate tool migrates as the owner role and refuses non-loopback server
   });
   const applied = await runTool(server.ownerUrl);
   assert.equal(applied.code, 0, applied.output);
-  assert.deepEqual(JSON.parse(applied.output.trim()), { event: 'db.migrate.completed', applied: [] });
+  // The shared fixture applies only platform migrations; the tool adds the context-owned ones, once.
+  assert.deepEqual(JSON.parse(applied.output.trim()), { event: 'db.migrate.completed', applied: ['0007_organizations_core', '0008_identity_external_identity', '0009_authorization_core', '0010_entitlements_core', '0011_audit_trail'] });
+  const again = await runTool(server.ownerUrl);
+  assert.equal(again.code, 0, again.output);
+  assert.deepEqual(JSON.parse(again.output.trim()), { event: 'db.migrate.completed', applied: [] });
+  assert.deepEqual(await auditTenantTables(owner.db), []);
   const refused = await runTool(server.ownerUrl.replace('127.0.0.1', 'db.example.com'));
   assert.equal(refused.code, 1);
   assert.ok(refused.output.includes('INVALID_OWNER_URL') && !refused.output.includes(server.ownerUrl.split('@')[0] ?? '<none>'));

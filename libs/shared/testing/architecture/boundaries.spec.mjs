@@ -12,7 +12,7 @@ const eslintBin=resolve(require.resolve('eslint/package.json'),'../bin/eslint.js
 const nxBin=resolve(require.resolve('nx/package.json'),'../dist/bin/nx.js');
 test('every real project is classified and composition roots do not import each other', () => {
   const projects=projectInventory();
-  assert.deepEqual(projects.map(p=>p.name).sort(),['api','data-classification','database','edge','events','http-platform','kernel','logging','outbox-relay','queue','request-context','runtime-config','test-containers','worker']);
+  assert.deepEqual(projects.map(p=>p.name).sort(),['access','api','audit-contract','audit-infrastructure','authorization-application','authorization-contract','authorization-domain','authorization-infrastructure','data-classification','database','edge','edge-store','entitlements-application','entitlements-contract','entitlements-domain','entitlements-infrastructure','event-consumer','events','http-platform','identity-contract','identity-infrastructure','kernel','logging','observability','ordering-application','ordering-contract','ordering-domain','ordering-edge','organizations-application','organizations-contract','organizations-domain','organizations-infrastructure','outbox-relay','pricing-contract','queue','request-context','runtime-config','test-containers','worker']);
   // Postgres infrastructure is Cloud-only; Edge must never be able to depend on it (ADR-029/037).
   for(const name of ['database','queue','outbox-relay']) assert.ok(projects.find(p=>p.name===name).tags.includes('runtime:cloud'),name);
   assert.ok(projects.find(p=>p.name==='test-containers').tags.includes('runtime:ci'));

@@ -28,6 +28,8 @@ export function constraints(projects) {
   return [
     { sourceTag:'layer:domain', onlyDependOnLibsWithTags:['layer:domain','layer:contract'], bannedExternalImports:['@nestjs/*','kysely','better-sqlite3','sqlite3','redis','ioredis','bullmq','@aws-sdk/*'] },
     { sourceTag:'layer:contract', onlyDependOnLibsWithTags:['layer:contract'] },
+    // Composition roots may wire any library; the runtime rules below still apply (Edge never depends on Cloud).
+    { sourceTag:'layer:composition', onlyDependOnLibsWithTags:['*'] },
     { sourceTag:'layer:application', onlyDependOnLibsWithTags:['layer:domain','layer:application','layer:contract'] },
     { sourceTag:'runtime:edge', notDependOnLibsWithTags:['runtime:cloud','runtime:ci'], bannedExternalImports:['bullmq','redis','ioredis','@aws-sdk/*'] },
     { sourceTag:'runtime:shared', notDependOnLibsWithTags:['runtime:cloud','runtime:edge','runtime:ci'] },
