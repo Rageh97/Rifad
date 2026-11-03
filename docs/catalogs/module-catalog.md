@@ -22,7 +22,7 @@ Bounded contexts, owners and data ownership come from v1.4 §§6–7 and §34 (s
 
 ## Business contexts
 
-Add a row per context when its first slice is authorized.
+Add a row per context when its first slice is authorized. Planned by [ADR-044](../architecture/adr/ADR-044-branch-authority-mode.md): a Cloud-owned Storefront context (site, pages, theme, media references, domains, SEO), and Cloud runtime profiles of Ordering, Payments, Billing and Fiscalization for CLOUD-mode branches.
 
 | Context | Owner | Milestone | Projects (domain / application / infrastructure / api) | Tables owned | Events produced | Public contract |
 | --- | --- | --- | --- | --- | --- | --- |

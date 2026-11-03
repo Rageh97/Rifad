@@ -27,9 +27,9 @@ New decisions use the [template](template.md) as `docs/architecture/adr/ADR-NNN-
 | ADR-019 | KSA-first baseline for SYS1 launch | Accepted (v1.4 baseline) | Not yet enforced in code |
 | ADR-020 | Fiscalization as first-class context; ZATCA adapter is only external transport | Accepted (v1.4 baseline) | Not yet enforced in code |
 | ADR-021 | Open Check + multiple Order Rounds/Submissions for dine-in | Accepted (v1.4 baseline) | Not yet enforced in code |
-| ADR-022 | Minimum Branch Edge included in M1 exit criteria | Accepted (v1.4 baseline) | Not yet enforced in code |
+| ADR-022 | Minimum Branch Edge included in M1 exit criteria | Accepted (v1.4 baseline); scope amended by [ADR-044](ADR-044-branch-authority-mode.md) on 2026-11-03: exit criterion of the full-operations track (F1), not of the website launch | Not yet enforced in code |
 | ADR-023 | Personal-data classification / PDPL cross-border governance before provider-region lock | Accepted (v1.4 baseline) | Default-deny outbound guard in `@rifad/data-classification` (no processors approved yet) |
-| ADR-024 | Client platform strategy by capability (Web/PWA/Native/Managed shell) | Accepted (v1.4 baseline) | Not yet enforced in code |
+| ADR-024 | Client platform strategy by capability (Web/PWA/Native/Managed shell) | Accepted (v1.4 baseline); V1 resolution 2026-11-03: web clients for every class ([G08](../../work/decisions.md)) | Not yet enforced in code |
 | ADR-025 | Intelligence Data Contract starts in M1 even when AI ships later | Accepted (v1.4 baseline) | Not yet enforced in code |
 | ADR-026 | Pricing and Promotions separated from Catalog ownership | Accepted (v1.4 baseline) | Not yet enforced in code |
 | ADR-027 | Costing & Profitability context separated from Inventory/Accounting truth | Accepted (v1.4 baseline) | Not yet enforced in code |
@@ -42,10 +42,18 @@ New decisions use the [template](template.md) as `docs/architecture/adr/ADR-NNN-
 | ADR-034 | PCI boundary minimizes card data; prefer separate terminal/redirect/hosted/tokenized provider flows | Accepted (v1.4 baseline) | Log redaction of card-data keys and Luhn-valid numbers (full M0-048 boundary pending) |
 | ADR-035 | Minimum Edge lifecycle management (signed update/rollback/key rotation/replacement) ships with M1 baseline | Accepted (v1.4 baseline) | Not yet enforced in code |
 | ADR-036 | Node.js 24 LTS is V1 runtime baseline; Node 26 upgrade only after LTS + compatibility validation | Accepted (v1.4 baseline) | Pinned Node 24.21.0 checked by `check:env` |
-| ADR-037 | Branch-owned Open Check/Round state is Edge/SQLite authority from first domain slice; Cloud stores synced projection/canonical central copy, not competing writer | Accepted (v1.4 baseline) | Not yet enforced in code |
+| ADR-037 | Branch-owned Open Check/Round state is Edge/SQLite authority from first domain slice; Cloud stores synced projection/canonical central copy, not competing writer | Accepted (v1.4 baseline); scope amended by [ADR-044](ADR-044-branch-authority-mode.md): applies to EDGE-mode branches | Not yet enforced in code |
 | ADR-038 | Branch Operational Projection is versioned/atomic and includes all data required to sell without live Cloud dependency | Accepted (v1.4 baseline) | Not yet enforced in code |
-| ADR-039 | Sale Finalization is synchronous within Edge local authority for offline-safe branch sale: tender allocation + Billing document + required fiscal state before Check CLOSED | Accepted (v1.4 baseline) | Not yet enforced in code |
+| ADR-039 | Sale Finalization is synchronous within Edge local authority for offline-safe branch sale: tender allocation + Billing document + required fiscal state before Check CLOSED | Accepted (v1.4 baseline); scope amended by [ADR-044](ADR-044-branch-authority-mode.md): EDGE-mode branches; CLOUD-mode branches finalize with the same invariant in one Cloud transaction | Not yet enforced in code |
 | ADR-040 | Restaurant Consumption Orchestrator translates Recipe/Modifier composition into generic Inventory commands; Inventory never depends on restaurant-specific Recipe model | Accepted (v1.4 baseline) | Not yet enforced in code |
 | ADR-041 | Local Edge Event Dispatcher is distinct from Cloud BullMQ; durable event plane is explicit (EDGE/CLOUD/EDGE_TO_CLOUD/CLOUD_TO_EDGE) | Accepted (v1.4 baseline) | Cloud outbox accepts only CLOUD/CLOUD_TO_EDGE; Edge bans BullMQ/Redis |
 | ADR-042 | POS/Cash owns drawer/count difference; Reconciliation owns provider/acquirer/bank matching; Payments owns tender/allocation | Accepted (v1.4 baseline) | Not yet enforced in code |
 | ADR-043 | Tenant PostgreSQL migrations are RLS-by-default from table creation; later RLS task is a verification gate, not delayed enablement | Accepted (v1.4 baseline) | RLS created in the same migration as each tenant table; audit test |
+
+## Decisions after the v1.4 baseline
+
+Each has its own file, a named approver and explicit amendments; none silently replaces a baseline decision.
+
+| ID | Decision | Status | Amends | Enforced by |
+| --- | --- | --- | --- | --- |
+| [ADR-044](ADR-044-branch-authority-mode.md) | Branch authority mode: CLOUD (website-only) or EDGE (full operations); one writer per branch, fenced by an authority epoch | Accepted 2026-11-03 (repository owner) | Scope of v1.4 §13, §24.1, ADR-022, ADR-037, ADR-039 | Not yet enforced in code (acceptance tests AT-01 to AT-14 planned) |

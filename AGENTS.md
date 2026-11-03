@@ -11,7 +11,7 @@ Only execute authorized scope. A work index or an agent-edited status is not app
 [RIFAD v1.4](RIFAD_v1.4_FINAL.docx) is authoritative. The [architecture index](docs/architecture/index.md) provides searchable navigation. Generated text is nonauthoritative. Do not invent unresolved M-1 answers or silently redesign architecture.
 
 - One context owns each business concept; use public contracts, never another context's tables or infrastructure internals (§§6–7, 24; ADR-002/015).
-- Branch operational state has one Edge writer in connected and disconnected modes. Cloud receives copies/projections and requests commands, never becomes a fallback writer (§13; ADR-029/037).
+- Branch operational state has exactly one writer, chosen by the branch authority mode and fenced by its epoch (ADR-044). EDGE branches (running POS): the Edge, in connected and disconnected modes; the Cloud receives copies/projections and requests commands and never becomes a fallback writer (§13; ADR-029/037). CLOUD branches (website-only): the Cloud. Connectivity never changes a mode.
 - Cloud master data remains Cloud-owned; Edge packages are versioned projections, not new owners (ADR-038).
 - Local Edge events remain independent of Redis/BullMQ/Cloud; state and local outbox are transactional when implemented (ADR-041).
 - Required local Payments/Billing/Fiscalization state precedes check closure. External providers never participate in local ACID (ADR-039; §12.2).
